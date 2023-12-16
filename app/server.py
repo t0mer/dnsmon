@@ -4,13 +4,13 @@ from loguru import logger
 from fastapi.responses import JSONResponse
 from sqliteconnector import SqliteConnector
 from fastapi import FastAPI, Request
-
+from utils import Utils
 class Server:
     def __init__(self):
         self.connector = SqliteConnector()
         self.connector.create_tables()
         self.servers_url = "https://wmd.techblog.co.il/servers"
-
+        self.utils = Utils()
         self.tags_metadata = [
             {
                 "name": "servers",
@@ -40,17 +40,26 @@ class Server:
         @self.app.get("/api/types",tags=['records'], summary="Get list of record types")
         def get_servers(request: Request):
             try:
-                records=['A','AAAA','CNAME','MX','NS','PTR','SOA','SRV','TXT','CAA']
-                return JSONResponse(records)
+                return JSONResponse(self.utils.types)
             except Exception as e:
                 logger.error("Error fetch images, " + str(e))
                 return None
             
         @self.app.get("/api/monitored",tags=['records'], summary="Get list of monitored records")
-        def get_servers(request: Request):
+        def get_monitored(request: Request):
             try:
                 monitored_records = self.connector.get_monitored_records(True)
                 return JSONResponse(monitored_records)
+            except Exception as e:
+                logger.error("Error fetch images, " + str(e))
+                return None
+            
+        @self.app.get("/api/query",tags=['records'], summary="Get list of monitored records")
+        def run_query(request: Request,server:str,type:str,query:str):
+            try:
+                response = self.utils.check_record(server,type,query)
+                return response
+                    # return JSONResponse(data)
             except Exception as e:
                 logger.error("Error fetch images, " + str(e))
                 return None
