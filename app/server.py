@@ -23,8 +23,11 @@ class Server:
         @self.app.get("/api/servers",tags=['servers'], summary="Get list of servers")
         def get_servers(request: Request):
             try:
-                servers = requests.get(self.servers_url)
-                return JSONResponse(servers.json())
+                servers = requests.get(self.servers_url).json()
+                for server in servers:
+                    self.connector.add_server(server['id'], server['latitude'],server['longitude'],server['location'],server['provider']
+                                              ,server['country'],server['status'])
+                return JSONResponse(self.connector.get_active_servers(True))
             except Exception as e:
                 logger.error("Error fetch images, " + str(e))
                 return None
