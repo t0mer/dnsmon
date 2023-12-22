@@ -26,10 +26,15 @@ class InvalidServerException(Exception):
 class Utils():
     def __init__(self):
         self.wmd_base_url = "https://www.whatsmydns.net/api/details?server={}&type={}&query={}"
+        self.servers_url = "https://wmd.techblog.co.il/servers"
         self.RESULT_EMOJIS = {"succeeded": "✅", "failed": "❌", "timeout": "⌛", "unknown": "❓"}
         self.headers = {"user-agent": f"dnsmon/{'1.0.0'}"}
         self.types=['A','AAAA','CNAME','MX','NS','PTR','SOA','SRV','TXT','CAA']
 
+
+    def update_servers_list(self):
+        return requests.get(self.servers_url).json()
+        
     
     def check_record(self,server,type,query):
         try:
