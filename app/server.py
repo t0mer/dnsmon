@@ -61,6 +61,12 @@ class Server:
             return self.templates.TemplateResponse('index.html', context={'request': request })
 
 
+        @self.app.get("/whatsmydns")
+        def home(request: Request):
+            # vtotal_enabled = VT_API_KEY != ""
+            logger.info("Loading default page")
+            return self.templates.TemplateResponse('propogation.html', context={'request': request })
+
 
 
         @self.app.get("/api/servers",tags=['servers'], summary="Get list of servers")
@@ -87,7 +93,7 @@ class Server:
             except Exception as e:
                 logger.error("Error fetch images, " + str(e))
                 return None
-            
+             
         @self.app.get("/api/query",tags=['records'], summary="Get list of monitored records")
         def run_query(request: Request,server:str,type:str,query:str):
             try:
