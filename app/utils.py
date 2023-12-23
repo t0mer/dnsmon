@@ -61,6 +61,8 @@ class Utils():
             else:
                 result = "unknown"
 
+
+
             if type=='SOA':
                 answer = data['response'][0].split(' ', 2)
                 answer = ' '.join(answer)
@@ -68,26 +70,28 @@ class Utils():
                 answer = ", ".join(answer.split()[-1] for answer in data["answers"])
 
 
-            return answer
+            return answer, self.RESULT_EMOJIS[result]
 
 
         except QueryTimeoutException:
             result = "timeout"
             answer = "DNS query timed out."
-            return answer, result
+            return answer, self.RESULT_EMOJIS[result]
 
         except InvalidServerException:
             result = "failed"
             answer = "Invalid server."
-            return answer, result
+            return answer, self.RESULT_EMOJIS[result]
 
         except InvalidTypeException:
             result = "failed"
             answer = "Invalid qery type"
-            return answer, result
+            return answer, self.RESULT_EMOJIS[result]
         
         except Exception as e:
             logger.error(str(e))
-            return "Aw, Snap!"
+            result = "failed"
+            answer = "Invalid server."
+            return answer, self.RESULT_EMOJIS[result]
 
         
