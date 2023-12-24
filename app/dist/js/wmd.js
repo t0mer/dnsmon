@@ -1,6 +1,12 @@
 $(document).ready(function () {
+    get_record_types();
     get_servers();
-    query();
+    
+    $('#search').click(function(){
+        query();
+    });
+
+    
 });
 
 function get_servers() {
@@ -8,12 +14,13 @@ function get_servers() {
 
         $.each(data, function (i, item) {
              var $tr = $('<tr>').append(
-                $('<td>').html("<img class='flag' src='/dist/img/flags/" +item["country"] + ".svg' />"),
-                $('<td>').text(item["latitude"]),
-                $('<td>').text(item["longitude"]),
-                $('<td>').text(item["location"]),
-                $('<td>').text(item["provider"]),
-                $('<td class="srv" id="' + item["id"] + '" >').html('&nbsp;')
+                $('<td class="vmiddle">').html("<img class='flag' src='/dist/img/flags/" +item["country"] + ".svg' />"),
+                $('<td class="vmiddle">').text(item["latitude"]),
+                $('<td class="vmiddle">').text(item["longitude"]),
+                $('<td class="vmiddle">').text(item["location"]),
+                $('<td class="vmiddle">').text(item["provider"]),
+                $('<td  class="vmiddle" id=status_' + item["id"] + ' >').html('&nbsp;'),
+                $('<td class="srv vmiddle" id="' + item["id"] + '" >').html('&nbsp;')
               );
    
             $('#wmd-servers').append('<tr>' + $tr.wrap('<tr>').html() + '</tr>');
@@ -37,16 +44,18 @@ function get_monitored_domains_count() {
     });
 }
 
-
 function query() {
     $(".srv").each(function() {
         var server_id = $(this).attr('id');
-        var url = "api/query/?server=" + server_id + "&type=SOA&query=techblog.co.il";
+        var url = "api/query/?server=" + server_id + "&type=" +$('#query-type').val() + "&query=" + $('#query').val();
 
         $.ajax({
             url: url,
             success: function(data) {
-                $('#' + server_id).text(data);
+                data = JSON.parse(data);
+                console.log(data);
+                $('#' + server_id).text(data.answer);
+                $('#status_' + server_id).text(data.status);
             }
         });
     });
@@ -92,4 +101,27 @@ function getDevices() {
             
         }
     });
+}
+
+function get_record_types(){
+    $.ajax({
+        url: 'api/types',
+        method: 'GET',
+        dataType: 'json',
+        success: function(data) {
+          var selectBox = $('#query-type');
+          
+          // Loop through the JSON data and append options to the select box
+          $.each(data, function(index, value) {
+            selectBox.append($('<option>', {
+              value: value,
+              text: value
+            }));
+          });
+          selectBox.find('option:first').prop('selected', true);
+        },
+        error: function(xhr, status, error) {
+          console.error(status + ': ' + error);
+        }
+      }); 
 }
