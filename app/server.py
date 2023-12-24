@@ -98,8 +98,7 @@ class Server:
         def run_query(request: Request,server:str,type:str,query:str):
             try:
                 response = self.utils.check_record(server,type,query)
-                return response
-                    # return JSONResponse(data)
+                return JSONResponse(response)
             except Exception as e:
                 logger.error("Error fetch images, " + str(e))
                 return None
