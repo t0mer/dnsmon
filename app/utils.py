@@ -2,6 +2,7 @@ import json
 import requests
 from loguru import logger
 
+
 class QueryTimeoutException(Exception):
     """A query timeout exception."""
 
@@ -23,16 +24,33 @@ class InvalidServerException(Exception):
 
 
 class Utils():
-    def __init__(self):
+    def __init__(self, connector):
         self.wmd_base_url = "https://www.whatsmydns.net/api/details?server={}&type={}&query={}"
         self.servers_url = "https://wmd.techblog.co.il/servers"
         self.RESULT_EMOJIS = {"succeeded": "✅", "failed": "❌", "timeout": "⌛", "unknown": "❓"}
         self.headers = {"user-agent": f"dnsmon/{'1.0.0'}"}
         self.types=['A','AAAA','CNAME','MX','NS','PTR','SOA','SRV','TXT','CAA']
+        self.connector = connector
 
 
     def update_servers_list(self):
-        return requests.get(self.servers_url).json()
+        try:
+            servers = requests.get(self.servers_url).json()
+            logger.debug("Got %s servers" %(len(servers)))
+            for server in servers:
+                self.connector.add_server(id=server['id'],
+                    latitude=server['latitude'],
+                    longitude=server['longitude'],
+                    location=server['location'],
+                    provider=server['provider'],
+                    country=server['country'],
+                    status=server['status']
+                    )
+            return True
+        except Exception as e:
+            logger.error(str(e))
+            return False
+            
         
     
     def check_record(self,server,type,query):
@@ -92,6 +110,8 @@ class Utils():
             result = "failed"
             answer = "Invalid server."
             return self.build_result(answer, self.RESULT_EMOJIS[result])
+
+
 
         
     def build_result(self,answer, status):

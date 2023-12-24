@@ -1,6 +1,20 @@
 $(document).ready(function () {
     get_servers();
     get_monitored_domains_count();
+
+    $('#update_servers').click(function(e){
+        e.preventDefault();
+        $.get("api/servers/update", function (data) {
+            if(data.success==true){
+                $('#wmd-servers').DataTable().clear();
+                $('#wmd-servers').DataTable().destroy();
+                get_servers();
+                get_monitored_domains_count();
+            }
+        });
+    });
+
+
 });
 
 function get_servers() {

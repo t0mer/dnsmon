@@ -21,7 +21,7 @@ class Server:
         self.connector = SqliteConnector()
         self.connector.create_tables()
         self.servers_url = "https://wmd.techblog.co.il/servers"
-        self.utils = Utils()
+        self.utils = Utils(self.connector)
         self.tags_metadata = [
             {
                 "name": "servers",
@@ -60,14 +60,11 @@ class Server:
             logger.info("Loading default page")
             return self.templates.TemplateResponse('index.html', context={'request': request })
 
-
         @self.app.get("/whatsmydns")
         def home(request: Request):
             # vtotal_enabled = VT_API_KEY != ""
             logger.info("Loading default page")
             return self.templates.TemplateResponse('propogation.html', context={'request': request })
-
-
 
         @self.app.get("/api/servers",tags=['servers'], summary="Get list of servers")
         def get_servers(request: Request):
@@ -103,7 +100,17 @@ class Server:
                 logger.error("Error fetch images, " + str(e))
                 return None
             
-           
+        @self.app.get("/api/servers/update",tags=['servers'], summary="Update servers list")
+        def update_servers(request: Request):
+            try:
+                response = self.utils.update_servers_list()
+                response = {"success":True,"messaege":""}
+                return JSONResponse(response)
+            except Exception as e:
+                logger.error("Error fetch images, " + str(e))
+                response = {"success":True,"message":str(e)}
+                return JSONResponse(response)
+
 
     def start(self):
         uvicorn.run(self.app, host="0.0.0.0", port=8082)
