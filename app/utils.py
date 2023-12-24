@@ -1,5 +1,4 @@
-import httpx
-import socket
+import json
 import requests
 from loguru import logger
 
@@ -70,28 +69,34 @@ class Utils():
                 answer = ", ".join(answer.split()[-1] for answer in data["answers"])
 
 
-            return answer, self.RESULT_EMOJIS[result]
+            return self.build_result(answer, self.RESULT_EMOJIS[result])
 
 
         except QueryTimeoutException:
             result = "timeout"
             answer = "DNS query timed out."
-            return answer, self.RESULT_EMOJIS[result]
+            return self.build_result(answer, self.RESULT_EMOJIS[result])
 
         except InvalidServerException:
             result = "failed"
             answer = "Invalid server."
-            return answer, self.RESULT_EMOJIS[result]
+            return self.build_result(answer, self.RESULT_EMOJIS[result])
 
         except InvalidTypeException:
             result = "failed"
             answer = "Invalid qery type"
-            return answer, self.RESULT_EMOJIS[result]
+            return self.build_result(answer, self.RESULT_EMOJIS[result])
         
         except Exception as e:
             logger.error(str(e))
             result = "failed"
             answer = "Invalid server."
-            return answer, self.RESULT_EMOJIS[result]
+            return self.build_result(answer, self.RESULT_EMOJIS[result])
 
         
+    def build_result(self,answer, status):
+        response = {
+            "answer":answer,
+            "status":status
+        }
+        return json.dumps(response)
