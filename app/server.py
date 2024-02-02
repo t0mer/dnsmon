@@ -39,8 +39,7 @@ class Server:
         self.app.mount("/plugins", StaticFiles(directory="plugins"), name="plugins")
         self.app.mount("/js", StaticFiles(directory="dist/js"), name="js")
         self.app.mount("/css", StaticFiles(directory="dist/css"), name="css")
-        # self.app.mount("/preview", StaticFiles(directory="preview"), name="css")
-        self.templates = Jinja2Templates(directory="templates/")
+self.templates = Jinja2Templates(directory="templates/")
         self.app.add_middleware(PrometheusMiddleware)
         self.app.add_route("/metrics", handle_metrics)
         self.origins = ["*"]
