@@ -56,18 +56,25 @@ class Server:
 
         @self.app.get("/")
         def home(request: Request):
-            # vtotal_enabled = VT_API_KEY != ""
+            """
+            Homepage
+            """
             logger.info("Loading default page")
             return self.templates.TemplateResponse('index.html', context={'request': request })
 
         @self.app.get("/whatsmydns")
         def home(request: Request):
-            # vtotal_enabled = VT_API_KEY != ""
+            """
+            Whatsmydns page
+            """
             logger.info("Loading default page")
             return self.templates.TemplateResponse('propogation.html', context={'request': request })
 
         @self.app.get("/api/servers",tags=['servers'], summary="Get list of servers")
         def get_servers(request: Request):
+            """
+            Return the list of WhatsMyDNS servers
+            """
             try:
                 return JSONResponse(self.connector.get_active_servers(True))
             except Exception as e:
@@ -76,6 +83,9 @@ class Server:
 
         @self.app.get("/api/types",tags=['records'], summary="Get list of record types")
         def get_types(request: Request):
+            """
+            Retuens the list of record types (A,AAAA,MX, etc.)
+            """
             try:
                 return JSONResponse(self.utils.types)
             except Exception as e:
@@ -84,6 +94,9 @@ class Server:
             
         @self.app.get("/api/monitored",tags=['records'], summary="Get list of monitored records")
         def get_monitored(request: Request):
+            """
+            Returns the list of monitored records
+            """
             try:
                 monitored_records = self.connector.get_monitored_records(True)
                 return JSONResponse(monitored_records)
@@ -93,6 +106,9 @@ class Server:
              
         @self.app.get("/api/query",tags=['records'], summary="Get list of monitored records")
         def run_query(request: Request,server:str,type:str,query:str):
+            """
+            Run the requested query to validate
+            """
             try:
                 response = self.utils.check_record(server,type,query)
                 return JSONResponse(response)
@@ -102,7 +118,11 @@ class Server:
             
         @self.app.get("/api/servers/update",tags=['servers'], summary="Update servers list")
         def update_servers(request: Request):
+            """
+            Update the Whatsmydns servers list
+            """
             try:
+                
                 response = self.utils.update_servers_list()
                 response = {"success":True,"messaege":""}
                 return JSONResponse(response)
