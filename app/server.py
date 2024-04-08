@@ -39,7 +39,7 @@ class Server:
         self.app.mount("/plugins", StaticFiles(directory="plugins"), name="plugins")
         self.app.mount("/js", StaticFiles(directory="dist/js"), name="js")
         self.app.mount("/css", StaticFiles(directory="dist/css"), name="css")
-self.templates = Jinja2Templates(directory="templates/")
+        self.templates = Jinja2Templates(directory="templates/")
         self.app.add_middleware(PrometheusMiddleware)
         self.app.add_route("/metrics", handle_metrics)
         self.origins = ["*"]
@@ -53,21 +53,20 @@ self.templates = Jinja2Templates(directory="templates/")
         )
 
 
-        @self.app.get("/")
+        @self.app.get("/servers")
         def home(request: Request):
             """
             Homepage
             """
-            logger.info("Loading default page")
-            return self.templates.TemplateResponse('index.html', context={'request': request })
+            return self.templates.TemplateResponse('servers.html', context={'request': request })
 
-        @self.app.get("/whatsmydns")
+        @self.app.get("/")
         def home(request: Request):
             """
             Whatsmydns page
             """
             logger.info("Loading default page")
-            return self.templates.TemplateResponse('propogation.html', context={'request': request })
+            return self.templates.TemplateResponse('index.html', context={'request': request })
 
         @self.app.get("/api/servers",tags=['servers'], summary="Get list of servers")
         def get_servers(request: Request):
