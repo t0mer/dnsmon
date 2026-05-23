@@ -43,12 +43,13 @@ func main() {
 		os.Exit(1)
 	}
 
-	if *listen != "" {
-		cfg.Server.Listen = *listen
+	listenAddr, err := resolveListen(cfg.Server.Listen, *listen, *port, os.Getenv("PORT"))
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "%v\n", err)
+		os.Exit(1)
 	}
-	if *port != 0 {
-		cfg.Server.Listen = applyPortOverride(cfg.Server.Listen, *port)
-	}
+	cfg.Server.Listen = listenAddr
+
 	if *logLevel != "" {
 		cfg.Log.Level = *logLevel
 	}
@@ -216,6 +217,27 @@ func absOrSelf(path string) string {
 		return abs
 	}
 	return path
+}
+
+// resolveListen computes the final listen address from the configured value, the
+// PORT environment variable (Docker convention), and the --listen/--port flags,
+// in increasing order of precedence: config < PORT env < --listen < --port.
+func resolveListen(configured, listenFlag string, portFlag int, portEnv string) (string, error) {
+	listen := configured
+	if portEnv != "" {
+		p, err := strconv.Atoi(portEnv)
+		if err != nil || p <= 0 {
+			return "", fmt.Errorf("invalid PORT environment value %q: must be a positive integer", portEnv)
+		}
+		listen = applyPortOverride(listen, p)
+	}
+	if listenFlag != "" {
+		listen = listenFlag
+	}
+	if portFlag != 0 {
+		listen = applyPortOverride(listen, portFlag)
+	}
+	return listen, nil
 }
 
 // applyPortOverride returns listen with its port replaced by port, preserving any
