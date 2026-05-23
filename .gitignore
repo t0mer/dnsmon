@@ -19,5 +19,10 @@ tmp/
 .idea/
 .vscode/
 
-# goreleaser dist
-dist/
+# goreleaser dist (repo root only)
+/dist/
+
+# Generated web build output, except the embedded third-party vendor assets
+# (leaflet, alpine, flag-icons) which are not produced by `make ui`.
+web/dist/*
+!web/dist/vendor/
