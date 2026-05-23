@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en" class="">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>gdns — Reverse DNS Lookup</title>
+  <meta name="description" content="Reverse DNS (PTR) lookup across global resolvers. Find the hostname for any IPv4 or IPv6 address." />
+  <link rel="stylesheet" href="/css/app.css" />
+  <!-- Leaflet -->
+  <link rel="stylesheet" href="/vendor/leaflet.css" />
+  <style>
+    #map { z-index: 0; }
+    .leaflet-popup-content-wrapper { border-radius: 10px !important; box-shadow: 0 8px 24px rgba(0,0,0,.15) !important; }
+    .leaflet-popup-tip { display: none; }
+    .dark .leaflet-popup-content-wrapper { background: #1e293b; color: #e2e8f0; }
+  </style>
+</head>
+<body class="min-h-screen" x-data>
+
+  <!-- Navigation -->
+  <nav class="sticky top-0 z-50 bg-white/90 dark:bg-slate-950/90 backdrop-blur border-b border-slate-200/80 dark:border-slate-800/80">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between h-14">
+
+        <!-- Logo -->
+        <a href="/" class="flex items-center gap-2 text-indigo-600 dark:text-indigo-400 font-bold text-lg" aria-label="gdns home">
+          <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+          </svg>
+          <span>gdns</span>
+        </a>
+
+        <!-- Desktop links -->
+        <div class="hidden md:flex items-center gap-1">
+          <a href="/" class="nav-link px-3 py-1.5 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800/60">Propagation</a>
+          <a href="/lookup" class="nav-link px-3 py-1.5 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800/60">DNS Lookup</a>
+          <a href="/reverse" class="nav-link-active px-3 py-1.5 rounded-md bg-indigo-50 dark:bg-indigo-950/40" aria-current="page">Reverse DNS</a>
+          <a href="/api-docs" class="nav-link px-3 py-1.5 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800/60">API</a>
+        </div>
+
+        <!-- Right: dark mode + mobile menu -->
+        <div class="flex items-center gap-1">
+          <button onclick="toggleDark()" class="p-2 rounded-lg text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors" aria-label="Toggle dark mode">
+            <svg class="w-4 h-4 dark:hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+            <svg class="w-4 h-4 hidden dark:block" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+          </button>
+          <button class="md:hidden p-2 rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors" aria-label="Toggle menu" @click="$refs.mobileNav.classList.toggle('hidden')">
+            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Mobile nav -->
+      <div x-ref="mobileNav" class="hidden md:hidden py-2 space-y-0.5">
+        <a href="/" class="flex items-center px-3 py-2 rounded-lg text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800">Propagation Check</a>
+        <a href="/lookup" class="flex items-center px-3 py-2 rounded-lg text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800">DNS Lookup</a>
+        <a href="/reverse" class="flex items-center px-3 py-2 rounded-lg text-sm font-medium text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/40" aria-current="page">Reverse DNS</a>
+        <a href="/api-docs" class="flex items-center px-3 py-2 rounded-lg text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800">API Docs</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Main content -->
+  <main x-data="reverseApp()">
+
+    <!-- HERO (gradient bg) -->
+    <div class="bg-gradient-to-br from-indigo-600 via-indigo-700 to-violet-800 dark:from-indigo-950 dark:via-slate-950 dark:to-violet-950">
+      <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-14">
+
+        <div class="mb-6">
+          <h1 class="text-2xl sm:text-3xl font-bold text-white mb-1.5">Reverse DNS Lookup</h1>
+          <p class="text-indigo-200 dark:text-indigo-300 text-sm sm:text-base">
+            Check PTR records for an IP address across <strong class="text-white">124 global resolvers</strong>.
+          </p>
+        </div>
+
+        <!-- Search card -->
+        <div class="bg-white/10 dark:bg-white/5 backdrop-blur-sm ring-1 ring-white/20 rounded-2xl p-4 sm:p-5">
+          <form @submit.prevent="lookup()" class="space-y-3">
+
+            <!-- IP input -->
+            <div>
+              <label for="ip-input" class="block text-xs font-medium text-indigo-200 mb-1">IP Address</label>
+              <input
+                id="ip-input"
+                type="text"
+                x-model="ip"
+                placeholder="8.8.8.8 or 2001:4860:4860::8888"
+                autocomplete="off" autocapitalize="none" spellcheck="false"
+                class="input bg-white/10 dark:bg-white/5 ring-white/20 text-white placeholder:text-indigo-300 focus:ring-white/50 focus:bg-white/15 font-mono"
+                aria-required="true"
+              />
+            </div>
+
+            <!-- Submit -->
+            <div>
+              <button type="submit"
+                class="btn bg-white hover:bg-indigo-50 text-indigo-700 font-semibold shadow-md"
+                :disabled="loading"
+                aria-label="Run reverse DNS lookup">
+                <svg class="w-4 h-4" :class="{ 'animate-spin': loading }" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+                <span x-text="loading ? 'Looking up…' : 'Reverse Lookup'"></span>
+              </button>
+            </div>
+
+          </form>
+        </div>
+
+        <!-- Progress bar -->
+        <div x-show="loading" class="mt-4" role="progressbar" aria-label="Loading reverse DNS results" aria-live="polite">
+          <div class="flex justify-between text-xs text-indigo-200 mb-1">
+            <span x-text="progressLabel"></span>
+            <span x-text="`${progressPct}%`"></span>
+          </div>
+          <div class="w-full bg-white/20 rounded-full h-1.5">
+            <div class="bg-white h-1.5 rounded-full transition-all duration-300" :style="`width: ${progressPct}%`"></div>
+          </div>
+        </div>
+
+        <!-- Error -->
+        <div x-show="errorMsg" class="mt-3 flex items-start gap-3 bg-rose-500/20 ring-1 ring-rose-400/30 rounded-xl p-4 text-rose-100 text-sm" role="alert" aria-live="assertive">
+          <svg class="w-4 h-4 mt-0.5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+          <span x-text="errorMsg"></span>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- RESULTS (white/slate bg) -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-5">
+
+      <!-- Summary stats bar -->
+      <div x-show="summary" class="card card-body" aria-live="polite">
+        <div class="flex flex-wrap gap-x-6 gap-y-3 text-sm">
+          <div class="flex items-center gap-2">
+            <div class="w-2 h-2 rounded-full bg-emerald-500 flex-shrink-0"></div>
+            <span class="text-slate-500 dark:text-slate-400">Resolved</span>
+            <span class="font-semibold text-slate-900 dark:text-white" x-text="summary ? `${summary.responded}/${summary.total_resolvers}` : ''"></span>
+          </div>
+          <div class="flex items-center gap-2">
+            <div class="w-2 h-2 rounded-full bg-indigo-500 flex-shrink-0"></div>
+            <span class="text-slate-500 dark:text-slate-400">Unique PTR records</span>
+            <span class="font-semibold text-slate-900 dark:text-white" x-text="summary ? summary.unique_answer_sets : ''"></span>
+          </div>
+          <div x-show="summary && summary.nxdomain > 0" class="flex items-center gap-2">
+            <div class="w-2 h-2 rounded-full bg-amber-500 flex-shrink-0"></div>
+            <span class="text-slate-500 dark:text-slate-400">No PTR record</span>
+            <span class="font-semibold text-amber-600 dark:text-amber-400" x-text="summary ? summary.nxdomain : ''"></span>
+          </div>
+          <div x-show="summary && summary.timeouts > 0" class="flex items-center gap-2">
+            <div class="w-2 h-2 rounded-full bg-rose-500 flex-shrink-0"></div>
+            <span class="text-slate-500 dark:text-slate-400">Timeouts</span>
+            <span class="font-semibold text-rose-600 dark:text-rose-400" x-text="summary ? summary.timeouts : ''"></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Map section — always in DOM so Leaflet can measure real dimensions -->
+      <div class="card overflow-hidden">
+        <div class="px-4 py-3 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+          <h2 class="text-sm font-semibold text-slate-700 dark:text-slate-300">Global Distribution</h2>
+          <div class="flex items-center gap-3 text-xs text-slate-500 dark:text-slate-500">
+            <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block"></span> OK</span>
+            <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block"></span> NXDOMAIN</span>
+            <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-rose-500 inline-block"></span> Error</span>
+          </div>
+        </div>
+        <div id="map" class="w-full" style="height: 340px;" role="img" aria-label="World map showing reverse DNS resolver results"></div>
+      </div>
+
+      <!-- Results dual-view -->
+      <div x-show="results.length > 0" class="card overflow-hidden">
+
+        <!-- Table header bar -->
+        <div class="px-4 py-3 border-b border-slate-100 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3">
+          <h2 class="font-semibold text-slate-900 dark:text-white text-sm">
+            PTR Results
+            <span class="ml-1.5 text-xs font-normal text-slate-500 dark:text-slate-400" x-text="`(${results.length} resolvers)`"></span>
+          </h2>
+        </div>
+
+        <!-- MOBILE: cards (block on sm and below, hidden on lg+) -->
+        <div class="lg:hidden divide-y divide-slate-100 dark:divide-slate-800/60">
+          <template x-for="result in results" :key="result.resolver.id + result.queried_at">
+            <div class="p-3 border-l-4 animate-fade-in"
+              :class="{
+                'border-l-emerald-500 hover:bg-emerald-50/30 dark:hover:bg-emerald-950/20': result.status === 'ok',
+                'border-l-amber-500 hover:bg-amber-50/30 dark:hover:bg-amber-950/20': result.status === 'nxdomain',
+                'border-l-rose-500 hover:bg-rose-50/30 dark:hover:bg-rose-950/20': result.status !== 'ok' && result.status !== 'nxdomain',
+              }">
+              <div class="flex items-start justify-between gap-2">
+                <div class="flex items-center gap-2 min-w-0">
+                  <span class="text-xl flex-shrink-0" x-text="countryFlag(result.resolver.country)" aria-hidden="true"></span>
+                  <div class="min-w-0">
+                    <div class="font-medium text-slate-900 dark:text-white text-sm truncate" x-text="result.resolver.name"></div>
+                    <div class="text-xs text-slate-500 dark:text-slate-400 font-mono" x-text="result.resolver.ip"></div>
+                  </div>
+                </div>
+                <div class="flex flex-col items-end gap-1 flex-shrink-0">
+                  <span
+                    :class="{
+                      'badge-ok': result.status === 'ok',
+                      'badge-nxdomain': result.status === 'nxdomain',
+                      'badge-error': result.status !== 'ok' && result.status !== 'nxdomain',
+                    }"
+                    x-text="result.status === 'ok' ? '✓ OK' : result.status.toUpperCase()">
+                  </span>
+                  <span class="text-xs font-mono text-slate-400 dark:text-slate-500"
+                    x-text="result.duration_ms != null ? result.duration_ms + 'ms' : ''"
+                    :class="{
+                      'dur-fast': result.duration_ms < 50,
+                      'dur-medium': result.duration_ms >= 50 && result.duration_ms < 200,
+                      'dur-slow': result.duration_ms >= 200,
+                    }">
+                  </span>
+                </div>
+              </div>
+              <div class="mt-1.5 ml-9" x-show="result.answers && result.answers.length > 0">
+                <template x-for="ans in result.answers.slice(0, 3)" :key="ans.value">
+                  <div class="text-xs font-mono text-emerald-700 dark:text-emerald-400 truncate" x-text="ans.value" :title="ans.value"></div>
+                </template>
+              </div>
+              <div class="mt-1 ml-9 text-xs text-slate-400 dark:text-slate-500"
+                x-text="[result.resolver.city, result.resolver.country].filter(Boolean).join(', ')"></div>
+            </div>
+          </template>
+        </div>
+
+        <!-- DESKTOP: table (hidden on mobile, block on lg+) -->
+        <div class="hidden lg:block overflow-x-auto">
+          <table class="w-full text-sm" role="table">
+            <thead>
+              <tr class="bg-slate-50/80 dark:bg-slate-800/40 text-xs text-slate-500 dark:text-slate-400">
+                <th class="text-left px-4 py-3 font-medium w-10" scope="col">Flag</th>
+                <th class="text-left px-4 py-3 font-medium" scope="col">Resolver</th>
+                <th class="text-left px-4 py-3 font-medium" scope="col">Location</th>
+                <th class="text-left px-4 py-3 font-medium" scope="col">Status</th>
+                <th class="text-left px-4 py-3 font-medium" scope="col">PTR Record</th>
+                <th class="text-left px-4 py-3 font-medium" scope="col">TTL</th>
+                <th class="text-left px-4 py-3 font-medium" scope="col">Time</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 dark:divide-slate-800/60">
+              <template x-for="result in results" :key="result.resolver.id + result.queried_at">
+                <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors animate-fade-in">
+                  <!-- Flag -->
+                  <td class="px-4 py-3">
+                    <span class="text-xl" x-text="countryFlag(result.resolver.country)" :title="result.resolver.country" aria-hidden="true"></span>
+                  </td>
+                  <!-- Resolver -->
+                  <td class="px-4 py-3">
+                    <div class="font-medium text-slate-900 dark:text-white" x-text="result.resolver.name"></div>
+                    <div class="text-xs text-slate-400 dark:text-slate-500 font-mono" x-text="result.resolver.ip"></div>
+                  </td>
+                  <!-- Location -->
+                  <td class="px-4 py-3 text-slate-500 dark:text-slate-400 text-xs">
+                    <span x-text="[result.resolver.city, result.resolver.country].filter(Boolean).join(', ')"></span>
+                  </td>
+                  <!-- Status badge -->
+                  <td class="px-4 py-3">
+                    <span
+                      :class="{
+                        'badge-ok': result.status === 'ok',
+                        'badge-nxdomain': result.status === 'nxdomain',
+                        'badge-error': result.status !== 'ok' && result.status !== 'nxdomain',
+                      }"
+                      x-text="result.status === 'ok' ? '✓ OK' : result.status.toUpperCase()">
+                    </span>
+                  </td>
+                  <!-- PTR record -->
+                  <td class="px-4 py-3 max-w-xs">
+                    <div x-show="result.answers && result.answers.length > 0" class="space-y-0.5">
+                      <template x-for="ans in result.answers" :key="ans.value">
+                        <div class="font-mono text-xs text-emerald-700 dark:text-emerald-400 truncate" x-text="ans.value" :title="ans.value"></div>
+                      </template>
+                    </div>
+                    <span x-show="!result.answers || result.answers.length === 0"
+                      class="text-xs text-slate-400 dark:text-slate-500 font-mono"
+                      x-text="result.error || '—'"></span>
+                  </td>
+                  <!-- TTL -->
+                  <td class="px-4 py-3 text-slate-400 dark:text-slate-500 text-xs font-mono">
+                    <span x-text="result.answers && result.answers.length > 0 ? result.answers[0].ttl + 's' : '—'"></span>
+                  </td>
+                  <!-- Duration -->
+                  <td class="px-4 py-3 text-xs font-mono"
+                    :class="{
+                      'dur-fast': result.duration_ms < 50,
+                      'dur-medium': result.duration_ms >= 50 && result.duration_ms < 200,
+                      'dur-slow': result.duration_ms >= 200,
+                      'text-slate-400 dark:text-slate-500': result.duration_ms == null,
+                    }">
+                    <span x-text="result.duration_ms != null ? result.duration_ms + 'ms' : '—'"></span>
+                  </td>
+                </tr>
+              </template>
+            </tbody>
+          </table>
+        </div>
+
+      </div>
+
+      <!-- Empty state -->
+      <div x-show="!loading && results.length === 0 && !errorMsg" class="py-20 text-center">
+        <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-indigo-100 dark:bg-indigo-950/60 flex items-center justify-center">
+          <svg class="w-8 h-8 text-indigo-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+            <path d="M9 12h6m-3-3v6"/><circle cx="12" cy="12" r="10"/>
+          </svg>
+        </div>
+        <h2 class="text-slate-700 dark:text-slate-300 font-semibold text-lg">Enter an IP address to look up PTR records</h2>
+        <p class="text-slate-400 dark:text-slate-500 text-sm mt-1 max-w-sm mx-auto">Results will show PTR records from resolvers around the world.</p>
+        <div class="mt-6 flex flex-wrap justify-center gap-2 text-xs text-slate-400 dark:text-slate-600">
+          <span class="px-3 py-1.5 rounded-full bg-slate-100 dark:bg-slate-800 font-mono">8.8.8.8</span>
+          <span class="px-3 py-1.5 rounded-full bg-slate-100 dark:bg-slate-800 font-mono">1.1.1.1</span>
+          <span class="px-3 py-1.5 rounded-full bg-slate-100 dark:bg-slate-800 font-mono">9.9.9.9</span>
+        </div>
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="border-t border-slate-200 dark:border-slate-800 mt-12 py-8">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-slate-400 dark:text-slate-500">
+        <div class="flex items-center gap-2">
+          <svg class="w-5 h-5 text-indigo-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+          <span class="font-medium text-slate-600 dark:text-slate-300">gdns</span>
+          <span>&#8212; Self-hosted DNS propagation checker</span>
+        </div>
+        <div class="flex items-center gap-4">
+          <a href="/about" class="hover:text-slate-600 dark:hover:text-slate-300 transition-colors">About</a>
+          <a href="https://github.com/tomerklein/gdns" class="hover:text-slate-600 dark:hover:text-slate-300 transition-colors" target="_blank" rel="noopener noreferrer">GitHub</a>
+          <a href="/api-docs" class="hover:text-slate-600 dark:hover:text-slate-300 transition-colors">API</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <script src="/vendor/leaflet.js"></script>
+  <script defer src="/js/export.js"></script>
+  <script defer src="/js/map.js"></script>
+  <script defer src="/js/app.js"></script>
+  <script defer src="/vendor/alpine.js"></script>
+</body>
+</html>

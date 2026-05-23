@@ -1,0 +1,160 @@
+##############################################################################
+# gdns — Global DNS Checker
+# Example configuration file with all available options documented.
+# Copy this to config.yaml and adjust for your environment.
+# All options can be overridden with GDNS_* environment variables.
+# e.g. GDNS_SERVER_LISTEN=":9090" overrides server.listen.
+##############################################################################
+
+server:
+  # Address and port to listen on.
+  # Env: GDNS_SERVER_LISTEN
+  listen: ":8080"
+
+  # Public base URL used for permalink generation.
+  # Env: GDNS_SERVER_BASE_URL
+  base_url: "https://gdns.example.com"
+
+  # Maximum time to read the full request, including body.
+  # Env: GDNS_SERVER_READ_TIMEOUT
+  read_timeout: 10s
+
+  # Maximum time to write the full response.
+  # Env: GDNS_SERVER_WRITE_TIMEOUT
+  write_timeout: 120s
+
+##############################################################################
+# DNS query settings
+##############################################################################
+dns:
+  # Timeout per individual DNS query to a single resolver.
+  # Env: GDNS_DNS_QUERY_TIMEOUT
+  query_timeout: 3s
+
+  # How many concurrent outbound queries to allow per propagation check.
+  # Env: GDNS_DNS_PER_RESOLVER_CONCURRENCY
+  per_resolver_concurrency: 50
+
+  # Default transport protocol for DNS queries.
+  # Options: udp | tcp | dot (DNS-over-TLS) | doh (DNS-over-HTTPS)
+  # Env: GDNS_DNS_DEFAULT_PROTOCOL
+  default_protocol: "udp"
+
+  # Number of retries for failed queries before marking as error.
+  # Env: GDNS_DNS_RETRY
+  retry: 1
+
+##############################################################################
+# Resolver registry
+##############################################################################
+resolvers:
+  # Whether to include the built-in curated resolver list (~100 resolvers).
+  # Env: GDNS_RESOLVERS_BUILTIN
+  builtin: true
+
+  # Optional path to a YAML or JSON file with additional custom resolvers.
+  # These are merged with (or replace, depending on IDs) the built-in list.
+  # Env: GDNS_RESOLVERS_FILE
+  file: ""
+
+  # Optional ISO-3166 alpha-2 country code whitelist. If non-empty, only
+  # resolvers in the listed countries will be used.
+  # Env: GDNS_RESOLVERS_COUNTRIES (comma-separated)
+  countries: []
+  # Example: countries: [US, DE, JP, AU]
+
+##############################################################################
+# Storage backend
+##############################################################################
+storage:
+  # Storage driver. Options: sqlite | postgres | none
+  # Use "none" to disable check history and permalink storage.
+  # Env: GDNS_STORAGE_DRIVER
+  driver: "sqlite"
+
+  # Data source name for the selected driver.
+  # SQLite example:  file:./gdns.db?cache=shared&_fk=1
+  # Postgres example: postgres://user:password@localhost:5432/gdns?sslmode=disable
+  # Env: GDNS_STORAGE_DSN
+  dsn: "file:./gdns.db?cache=shared&_fk=1"
+
+  # Automatically delete saved checks older than this many days. 0 = never.
+  # Env: GDNS_STORAGE_RETENTION_DAYS
+  retention_days: 30
+
+##############################################################################
+# Cache
+##############################################################################
+cache:
+  # Cache driver. Options: memory | redis | none
+  # Env: GDNS_CACHE_DRIVER
+  driver: "memory"
+
+  # How long to cache a (name, type, resolver) response tuple.
+  # Env: GDNS_CACHE_TTL
+  ttl: 60s
+
+  # Maximum number of entries in the in-memory LRU cache (memory driver only).
+  # Env: GDNS_CACHE_SIZE
+  size: 10000
+
+  # Redis connection address (redis driver only). Format: host:port
+  # Env: GDNS_CACHE_REDIS_ADDR
+  redis_addr: ""
+  # Example: redis_addr: "localhost:6379"
+
+##############################################################################
+# Rate limiting
+##############################################################################
+ratelimit:
+  # Whether rate limiting is enabled.
+  # Env: GDNS_RATELIMIT_ENABLED
+  enabled: true
+
+  # Maximum requests per minute for anonymous (unauthenticated) callers per IP.
+  # Env: GDNS_RATELIMIT_ANON_PER_MIN
+  anon_per_min: 30
+
+  # Maximum requests per minute for authenticated callers (API key holders).
+  # Env: GDNS_RATELIMIT_KEY_PER_MIN
+  key_per_min: 600
+
+##############################################################################
+# GeoIP (optional)
+# Used only when operators add custom resolvers without embedded geolocation.
+# The built-in resolvers already have lat/lng/country embedded in resolvers.json.
+##############################################################################
+geoip:
+  # Whether to enable MaxMind GeoLite2 lookups.
+  # Env: GDNS_GEOIP_ENABLED
+  enabled: false
+
+  # Path to the MaxMind GeoLite2-City.mmdb database file.
+  # Env: GDNS_GEOIP_MMDB_PATH
+  mmdb_path: ""
+  # Example: mmdb_path: "/etc/gdns/GeoLite2-City.mmdb"
+
+##############################################################################
+# Logging
+##############################################################################
+log:
+  # Minimum log level. Options: debug | info | warn | error
+  # Env: GDNS_LOG_LEVEL
+  level: "info"
+
+  # Log output format. Options: json | text
+  # Use "json" in production for structured log ingestion.
+  # Env: GDNS_LOG_FORMAT
+  format: "json"
+
+##############################################################################
+# Metrics (Prometheus)
+##############################################################################
+metrics:
+  # Whether to expose the Prometheus metrics endpoint.
+  # Env: GDNS_METRICS_ENABLED
+  enabled: true
+
+  # Path at which to serve the metrics endpoint.
+  # Env: GDNS_METRICS_PATH
+  path: "/metrics"

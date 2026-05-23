@@ -1,0 +1,49 @@
+version: 2
+
+before:
+  hooks:
+    - make ui
+    - go mod tidy
+
+builds:
+  - id: gdns
+    main: ./cmd/gdns
+    binary: gdns
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    ldflags:
+      - -s -w
+      - -X github.com/tomerklein/gdns/internal/version.Version={{.Version}}
+      - -X github.com/tomerklein/gdns/internal/version.Commit={{.ShortCommit}}
+      - -X github.com/tomerklein/gdns/internal/version.Date={{.Date}}
+
+archives:
+  - format: tar.gz
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    format_overrides:
+      - goos: windows
+        format: zip
+
+dockers:
+  - image_templates:
+      - "ghcr.io/tomerklein/gdns:{{ .Tag }}"
+      - "ghcr.io/tomerklein/gdns:latest"
+    dockerfile: deploy/Dockerfile
+    use: buildx
+    build_flag_templates:
+      - "--platform=linux/amd64,linux/arm64"
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^chore:"
+      - "^test:"
