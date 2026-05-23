@@ -8,6 +8,8 @@
   <link rel="stylesheet" href="/css/app.css" />
   <!-- Leaflet -->
   <link rel="stylesheet" href="/vendor/leaflet.css" />
+  <!-- Country flags (SVG, renders on all platforms) -->
+  <link rel="stylesheet" href="/vendor/flag-icons/css/flag-icons.min.css" />
   <style>
     #map { z-index: 0; }
     .leaflet-popup-content-wrapper { border-radius: 10px !important; box-shadow: 0 8px 24px rgba(0,0,0,.15) !important; }
@@ -191,7 +193,8 @@
               <div class="flex items-start justify-between gap-2">
                 <div class="flex items-center gap-2 min-w-0">
                   <span class="relative flex-shrink-0 group cursor-default">
-                    <span class="text-xl" x-text="countryFlag(result.resolver.country)" aria-hidden="true"></span>
+                    <span class="fi text-xl rounded-sm ring-1 ring-black/5"
+                      :class="'fi-' + (result.resolver.country || 'xx').toLowerCase()" aria-hidden="true"></span>
                     <span class="absolute z-10 bottom-full left-1/2 -translate-x-1/2 mb-1.5 px-2 py-1 text-xs rounded-md bg-slate-800 dark:bg-slate-700 text-white whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-150 shadow-lg"
                       x-text="countryName(result.resolver.country)"></span>
                   </span>
@@ -220,13 +223,14 @@
                 </div>
               </div>
               <div class="mt-1.5 ml-9" x-show="result.answers && result.answers.length > 0">
-                <template x-for="ans in result.answers.slice(0, 3)" :key="ans.value">
+                <template x-for="ans in (result.answers || []).slice(0, 3)" :key="ans.value">
                   <div class="text-xs font-mono text-emerald-700 dark:text-emerald-400 truncate" x-text="ans.value" :title="ans.value"></div>
                 </template>
               </div>
-              <div class="mt-1 ml-9 text-xs text-slate-400 dark:text-slate-500 flex items-center gap-1">
-                <span class="relative group cursor-default">
-                  <span x-text="countryFlag(result.resolver.country)" aria-hidden="true"></span>
+              <div class="mt-1 ml-9 text-xs text-slate-400 dark:text-slate-500 flex items-center gap-1.5">
+                <span class="relative group cursor-default leading-none">
+                  <span class="fi rounded-sm ring-1 ring-black/5"
+                    :class="'fi-' + (result.resolver.country || 'xx').toLowerCase()" aria-hidden="true"></span>
                   <span class="absolute z-10 bottom-full left-1/2 -translate-x-1/2 mb-1.5 px-2 py-1 text-xs rounded-md bg-slate-800 dark:bg-slate-700 text-white whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-150 shadow-lg"
                     x-text="countryName(result.resolver.country)"></span>
                 </span>
@@ -256,7 +260,8 @@
                   <!-- Flag -->
                   <td class="px-4 py-3">
                     <span class="relative inline-block group cursor-default">
-                      <span class="text-xl" x-text="countryFlag(result.resolver.country)" aria-hidden="true"></span>
+                      <span class="fi text-xl rounded-sm ring-1 ring-black/5"
+                        :class="'fi-' + (result.resolver.country || 'xx').toLowerCase()" aria-hidden="true"></span>
                       <span class="absolute z-10 bottom-full left-1/2 -translate-x-1/2 mb-1.5 px-2 py-1 text-xs rounded-md bg-slate-800 dark:bg-slate-700 text-white whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-150 shadow-lg"
                         x-text="countryName(result.resolver.country)"></span>
                     </span>
