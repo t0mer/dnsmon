@@ -1,0 +1,23 @@
+# Compiled binary
+bin/
+
+# Node modules (Tailwind build-time only)
+web/node_modules/
+
+# SQLite database
+*.db
+*.db-shm
+*.db-wal
+
+# Air hot-reload temp dir
+tmp/
+
+# OS
+.DS_Store
+
+# Editor
+.idea/
+.vscode/
+
+# goreleaser dist
+dist/

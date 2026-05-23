@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en" class="">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>gdns — About</title>
+  <meta name="description" content="About gdns — a self-hosted, open-source DNS propagation checker built with Go." />
+  <link rel="stylesheet" href="/css/app.css" />
+</head>
+<body class="min-h-screen">
+
+  <!-- Navigation -->
+  <nav class="sticky top-0 z-50 bg-white/90 dark:bg-slate-950/90 backdrop-blur border-b border-slate-200/80 dark:border-slate-800/80">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between h-14">
+
+        <!-- Logo -->
+        <a href="/" class="flex items-center gap-2 text-indigo-600 dark:text-indigo-400 font-bold text-lg" aria-label="gdns home">
+          <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+          </svg>
+          <span>gdns</span>
+        </a>
+
+        <!-- Desktop links -->
+        <div class="hidden md:flex items-center gap-1">
+          <a href="/" class="nav-link px-3 py-1.5 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800/60">Propagation</a>
+          <a href="/lookup" class="nav-link px-3 py-1.5 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800/60">DNS Lookup</a>
+          <a href="/reverse" class="nav-link px-3 py-1.5 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800/60">Reverse DNS</a>
+          <a href="/api-docs" class="nav-link px-3 py-1.5 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800/60">API</a>
+        </div>
+
+        <!-- Right: dark mode -->
+        <div class="flex items-center gap-1">
+          <button onclick="toggleDark()" class="p-2 rounded-lg text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors" aria-label="Toggle dark mode">
+            <svg class="w-4 h-4 dark:hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+            <svg class="w-4 h-4 hidden dark:block" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Hero (gradient banner, smaller) -->
+  <div class="bg-gradient-to-br from-indigo-600 via-indigo-700 to-violet-800 dark:from-indigo-950 dark:via-slate-950 dark:to-violet-950">
+    <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-10 text-center">
+      <div class="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-white/20 ring-1 ring-white/30 mb-4">
+        <svg class="w-8 h-8 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+        </svg>
+      </div>
+      <h1 class="text-2xl sm:text-3xl font-bold text-white mb-2">About gdns</h1>
+      <p class="text-indigo-200 dark:text-indigo-300 text-sm sm:text-base max-w-xl mx-auto">
+        A free, open-source, self-hosted alternative to <a href="https://www.whatsmydns.net" target="_blank" rel="noopener noreferrer" class="text-white underline underline-offset-2 hover:no-underline">whatsmydns.net</a> — built with Go.
+      </p>
+    </div>
+  </div>
+
+  <!-- Main content -->
+  <main class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-5">
+
+    <!-- What is gdns -->
+    <div class="card card-body">
+      <h2 class="text-lg font-semibold text-slate-900 dark:text-white mb-3">What is gdns?</h2>
+      <p class="text-slate-600 dark:text-slate-400 leading-relaxed mb-3 text-sm">
+        <strong class="text-slate-900 dark:text-white">gdns</strong> is an open-source DNS propagation checker you can run inside
+        your own infrastructure. It queries 100+ global public DNS resolvers in parallel and shows you how a DNS record is
+        resolving around the world — in real time.
+      </p>
+      <p class="text-slate-600 dark:text-slate-400 leading-relaxed text-sm">
+        It mirrors the functionality of whatsmydns.net but runs entirely on your servers, with no data leaving your network.
+        A single static binary, a &lt;20 MB Docker image, and one command to deploy.
+      </p>
+    </div>
+
+    <!-- Feature grid -->
+    <div class="card card-body">
+      <h2 class="text-lg font-semibold text-slate-900 dark:text-white mb-4">Features</h2>
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+
+        <!-- Feature: Propagation -->
+        <div class="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-4">
+          <div class="w-8 h-8 rounded-lg bg-indigo-100 dark:bg-indigo-950/60 flex items-center justify-center mb-2">
+            <svg class="w-4 h-4 text-indigo-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+          </div>
+          <div class="font-medium text-slate-900 dark:text-white text-sm">DNS Propagation</div>
+          <div class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Check across 100+ global resolvers with world map visualization</div>
+        </div>
+
+        <!-- Feature: Detailed Lookup -->
+        <div class="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-4">
+          <div class="w-8 h-8 rounded-lg bg-indigo-100 dark:bg-indigo-950/60 flex items-center justify-center mb-2">
+            <svg class="w-4 h-4 text-indigo-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+          </div>
+          <div class="font-medium text-slate-900 dark:text-white text-sm">Detailed Lookup</div>
+          <div class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Full DNS response: flags, sections, RCODE, DNSSEC AD flag</div>
+        </div>
+
+        <!-- Feature: Reverse DNS -->
+        <div class="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-4">
+          <div class="w-8 h-8 rounded-lg bg-indigo-100 dark:bg-indigo-950/60 flex items-center justify-center mb-2">
+            <svg class="w-4 h-4 text-indigo-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 12h6m-3-3v6"/><circle cx="12" cy="12" r="10"/></svg>
+          </div>
+          <div class="font-medium text-slate-900 dark:text-white text-sm">Reverse DNS</div>
+          <div class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">PTR lookup for IPv4 and IPv6 across global resolvers</div>
+        </div>
+
+        <!-- Feature: WebSocket Live -->
+        <div class="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-4">
+          <div class="w-8 h-8 rounded-lg bg-emerald-100 dark:bg-emerald-950/60 flex items-center justify-center mb-2">
+            <svg class="w-4 h-4 text-emerald-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>
+          </div>
+          <div class="font-medium text-slate-900 dark:text-white text-sm">WebSocket Live</div>
+          <div class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Stream results in real time as each resolver responds</div>
+        </div>
+
+        <!-- Feature: REST API -->
+        <div class="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-4">
+          <div class="w-8 h-8 rounded-lg bg-violet-100 dark:bg-violet-950/60 flex items-center justify-center mb-2">
+            <svg class="w-4 h-4 text-violet-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg>
+          </div>
+          <div class="font-medium text-slate-900 dark:text-white text-sm">REST API</div>
+          <div class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">OpenAPI 3.1 documented API with rate limiting and API keys</div>
+        </div>
+
+        <!-- Feature: Self-hosted -->
+        <div class="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-4">
+          <div class="w-8 h-8 rounded-lg bg-amber-100 dark:bg-amber-950/60 flex items-center justify-center mb-2">
+            <svg class="w-4 h-4 text-amber-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+          </div>
+          <div class="font-medium text-slate-900 dark:text-white text-sm">Self-hosted</div>
+          <div class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Single binary, &lt;20 MB Docker image, SQLite or Postgres</div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Quick deploy -->
+    <div class="card card-body">
+      <h2 class="text-lg font-semibold text-slate-900 dark:text-white mb-3">Deploy in 30 seconds</h2>
+      <p class="text-slate-600 dark:text-slate-400 text-sm mb-4">
+        Run gdns with a single command using Docker Compose:
+      </p>
+      <pre class="bg-slate-900 dark:bg-slate-950 text-emerald-400 text-sm font-mono p-4 rounded-xl overflow-x-auto ring-1 ring-slate-800"><code>docker compose -f deploy/docker-compose.sqlite.yml up -d</code></pre>
+      <p class="text-sm text-slate-500 dark:text-slate-400 mt-3">
+        Then open <strong class="font-mono text-slate-700 dark:text-slate-300">http://localhost:8080</strong> in your browser.
+        For production deployments with Postgres and Redis, see the
+        <a href="https://github.com/tomerklein/gdns/blob/main/docs/DEPLOYMENT.md" target="_blank" rel="noopener noreferrer"
+          class="text-indigo-600 dark:text-indigo-400 hover:underline">deployment guide</a>.
+      </p>
+    </div>
+
+    <!-- Tech stack -->
+    <div class="card card-body">
+      <h2 class="text-lg font-semibold text-slate-900 dark:text-white mb-4">Tech Stack</h2>
+      <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+        <div class="bg-slate-50 dark:bg-slate-800/50 rounded-lg px-3 py-2.5">
+          <div class="font-medium text-slate-900 dark:text-white text-sm">Go 1.23+</div>
+          <div class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Backend / Binary</div>
+        </div>
+        <div class="bg-slate-50 dark:bg-slate-800/50 rounded-lg px-3 py-2.5">
+          <div class="font-medium text-slate-900 dark:text-white text-sm">miekg/dns</div>
+          <div class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">DNS library</div>
+        </div>
+        <div class="bg-slate-50 dark:bg-slate-800/50 rounded-lg px-3 py-2.5">
+          <div class="font-medium text-slate-900 dark:text-white text-sm">chi</div>
+          <div class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">HTTP router</div>
+        </div>
+        <div class="bg-slate-50 dark:bg-slate-800/50 rounded-lg px-3 py-2.5">
+          <div class="font-medium text-slate-900 dark:text-white text-sm">Alpine.js</div>
+          <div class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Frontend reactivity</div>
+        </div>
+        <div class="bg-slate-50 dark:bg-slate-800/50 rounded-lg px-3 py-2.5">
+          <div class="font-medium text-slate-900 dark:text-white text-sm">Leaflet.js</div>
+          <div class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">World map</div>
+        </div>
+        <div class="bg-slate-50 dark:bg-slate-800/50 rounded-lg px-3 py-2.5">
+          <div class="font-medium text-slate-900 dark:text-white text-sm">Tailwind CSS</div>
+          <div class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Styling</div>
+        </div>
+        <div class="bg-slate-50 dark:bg-slate-800/50 rounded-lg px-3 py-2.5">
+          <div class="font-medium text-slate-900 dark:text-white text-sm">SQLite / Postgres</div>
+          <div class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Storage (optional)</div>
+        </div>
+        <div class="bg-slate-50 dark:bg-slate-800/50 rounded-lg px-3 py-2.5">
+          <div class="font-medium text-slate-900 dark:text-white text-sm">Distroless</div>
+          <div class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Container base</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Links -->
+    <div class="card card-body">
+      <h2 class="text-lg font-semibold text-slate-900 dark:text-white mb-4">Links</h2>
+      <div class="flex flex-col sm:flex-row gap-3">
+        <a href="https://github.com/tomerklein/gdns" target="_blank" rel="noopener noreferrer"
+          class="btn-primary flex items-center justify-center gap-2">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/>
+          </svg>
+          GitHub Repository
+        </a>
+        <a href="/api-docs" class="btn-secondary flex items-center justify-center gap-2">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/>
+          </svg>
+          API Documentation
+        </a>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="border-t border-slate-200 dark:border-slate-800 mt-12 py-8">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-slate-400 dark:text-slate-500">
+        <div class="flex items-center gap-2">
+          <svg class="w-5 h-5 text-indigo-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+          <span class="font-medium text-slate-600 dark:text-slate-300">gdns</span>
+          <span>&#8212; Self-hosted DNS propagation checker. MIT License.</span>
+        </div>
+        <div class="flex items-center gap-4">
+          <a href="/about" class="hover:text-slate-600 dark:hover:text-slate-300 transition-colors">About</a>
+          <a href="https://github.com/tomerklein/gdns" class="hover:text-slate-600 dark:hover:text-slate-300 transition-colors" target="_blank" rel="noopener noreferrer">GitHub</a>
+          <a href="/api-docs" class="hover:text-slate-600 dark:hover:text-slate-300 transition-colors">API</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+      document.documentElement.classList.add('dark');
+    }
+    function toggleDark() {
+      document.documentElement.classList.toggle('dark');
+      localStorage.theme = document.documentElement.classList.contains('dark') ? 'dark' : 'light';
+    }
+  </script>
+  <script defer src="/js/app.js"></script>
+  <script defer src="/vendor/alpine.js"></script>
+</body>
+</html>

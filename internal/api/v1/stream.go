@@ -1,0 +1,95 @@
+package v1
+
+import (
+	"context"
+	"encoding/json"
+	"net/http"
+
+	"github.com/coder/websocket"
+	"github.com/coder/websocket/wsjson"
+	"github.com/tomerklein/gdns/internal/api/apierr"
+	"github.com/tomerklein/gdns/internal/checker"
+	"github.com/tomerklein/gdns/internal/dnsclient"
+)
+
+type wsStreamRequest struct {
+	Name      string   `json:"name"`
+	Type      string   `json:"type"`
+	Resolvers []string `json:"resolvers"`
+}
+
+type wsMessage struct {
+	Type string      `json:"type"`
+	Data interface{} `json:"data"`
+}
+
+type wsDoneData struct {
+	Summary dnsclient.CheckSummary `json:"summary"`
+	ID      string                 `json:"id"`
+}
+
+type wsErrorData struct {
+	Code    string `json:"code"`
+	Message string `json:"message"`
+}
+
+// StreamCheck handles GET /api/v1/check/stream (WebSocket).
+func StreamCheck(chkr *checker.Checker) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		conn, err := websocket.Accept(w, r, &websocket.AcceptOptions{
+			InsecureSkipVerify: true,
+		})
+		if err != nil {
+			apierr.WriteError(w, r, http.StatusBadRequest, apierr.ErrCodeInvalidInput,
+				"Failed to upgrade WebSocket connection.", nil)
+			return
+		}
+		defer conn.CloseNow()
+
+		ctx := conn.CloseRead(r.Context())
+
+		var req wsStreamRequest
+		if err := wsjson.Read(ctx, conn, &req); err != nil {
+			sendWSError(ctx, conn, apierr.ErrCodeInvalidInput, "Failed to read request.")
+			return
+		}
+
+		if req.Name == "" || req.Type == "" {
+			sendWSError(ctx, conn, apierr.ErrCodeInvalidInput, "name and type are required.")
+			return
+		}
+
+		resultCh, doneCh := chkr.Stream(ctx, checker.StreamRequest{
+			Name:        req.Name,
+			Type:        req.Type,
+			ResolverIDs: req.Resolvers,
+		})
+
+		for result := range resultCh {
+			msg := wsMessage{Type: "result", Data: result}
+			if err := wsjson.Write(ctx, conn, msg); err != nil {
+				return
+			}
+		}
+
+		if summary, ok := <-doneCh; ok && summary != nil {
+			id := checker.NewID(req.Name, req.Type)
+			msg := wsMessage{
+				Type: "done",
+				Data: wsDoneData{Summary: *summary, ID: id},
+			}
+			_ = wsjson.Write(ctx, conn, msg)
+		}
+
+		conn.Close(websocket.StatusNormalClosure, "done")
+	}
+}
+
+func sendWSError(ctx context.Context, conn *websocket.Conn, code, message string) {
+	msg := wsMessage{
+		Type: "error",
+		Data: wsErrorData{Code: code, Message: message},
+	}
+	data, _ := json.Marshal(msg)
+	_ = conn.Write(ctx, websocket.MessageText, data)
+}

@@ -1,0 +1,519 @@
+openapi: 3.1.0
+info:
+  title: gdns API
+  description: Self-hosted DNS propagation checker API
+  version: 1.0.0
+  license:
+    name: MIT
+
+servers:
+  - url: /api/v1
+    description: API v1
+
+security: []
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: API key
+
+  schemas:
+    Answer:
+      type: object
+      properties:
+        name:
+          type: string
+        type:
+          type: string
+        ttl:
+          type: integer
+          format: int32
+        value:
+          type: string
+
+    Resolver:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        ip:
+          type: string
+        port:
+          type: integer
+        protocol:
+          type: string
+          enum: [udp, tcp, dot, doh]
+        country:
+          type: string
+        city:
+          type: string
+        lat:
+          type: number
+          format: double
+        lng:
+          type: number
+          format: double
+        asn:
+          type: integer
+          format: int64
+        isp:
+          type: string
+
+    ResolverResult:
+      type: object
+      properties:
+        resolver:
+          $ref: '#/components/schemas/Resolver'
+        status:
+          type: string
+          enum: [ok, nxdomain, timeout, servfail, refused, error]
+        answers:
+          type: array
+          items:
+            $ref: '#/components/schemas/Answer'
+        authority:
+          type: array
+          items:
+            $ref: '#/components/schemas/Answer'
+        additional:
+          type: array
+          items:
+            $ref: '#/components/schemas/Answer'
+        dnssec:
+          type: boolean
+          nullable: true
+        duration_ms:
+          type: integer
+          format: int64
+        error:
+          type: string
+        queried_at:
+          type: string
+          format: date-time
+
+    CheckSummary:
+      type: object
+      properties:
+        total_resolvers:
+          type: integer
+        responded:
+          type: integer
+        nxdomain:
+          type: integer
+        timeouts:
+          type: integer
+        errors:
+          type: integer
+        unique_answer_sets:
+          type: integer
+        consensus:
+          type: object
+          additionalProperties:
+            type: integer
+
+    Check:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        type:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ResolverResult'
+        summary:
+          $ref: '#/components/schemas/CheckSummary'
+
+    ErrorDetail:
+      type: object
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        details:
+          type: object
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          $ref: '#/components/schemas/ErrorDetail'
+        request_id:
+          type: string
+
+    VersionInfo:
+      type: object
+      properties:
+        version:
+          type: string
+        commit:
+          type: string
+        date:
+          type: string
+
+    RecordType:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+
+paths:
+  /health:
+    get:
+      summary: Liveness check
+      operationId: getHealth
+      tags: [Health]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+
+  /readyz:
+    get:
+      summary: Readiness check
+      operationId: getReadyz
+      tags: [Health]
+      responses:
+        '200':
+          description: Ready
+        '503':
+          description: Not ready
+
+  /version:
+    get:
+      summary: Build version info
+      operationId: getVersion
+      tags: [Health]
+      responses:
+        '200':
+          description: Version info
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VersionInfo'
+
+  /resolvers:
+    get:
+      summary: List all resolvers
+      operationId: listResolvers
+      tags: [Resolvers]
+      parameters:
+        - name: country
+          in: query
+          schema:
+            type: string
+          description: Filter by ISO-3166 alpha-2 country code(s), comma-separated
+        - name: q
+          in: query
+          schema:
+            type: string
+          description: Free-text search
+      responses:
+        '200':
+          description: List of resolvers
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Resolver'
+
+  /resolvers/{id}:
+    get:
+      summary: Get a resolver by ID
+      operationId: getResolver
+      tags: [Resolvers]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Resolver found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Resolver'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /record-types:
+    get:
+      summary: List supported record types
+      operationId: listRecordTypes
+      tags: [Discovery]
+      responses:
+        '200':
+          description: List of record types
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RecordType'
+
+  /check:
+    post:
+      summary: Run a DNS propagation check
+      operationId: postCheck
+      tags: [Check]
+      security:
+        - {}
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, type]
+              properties:
+                name:
+                  type: string
+                  description: Domain name to check
+                type:
+                  type: string
+                  description: DNS record type
+                resolvers:
+                  type: array
+                  items:
+                    type: string
+                  description: Resolver IDs to use (empty = all)
+                custom_resolvers:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/Resolver'
+                save:
+                  type: boolean
+                  description: Persist the check for later retrieval
+      responses:
+        '200':
+          description: Check completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Check'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /check/stream:
+    get:
+      summary: Stream DNS propagation check results via WebSocket
+      operationId: streamCheck
+      tags: [Check]
+      description: |
+        Upgrade to WebSocket. Send a JSON frame: `{"name":"...","type":"A","resolvers":[]}`.
+        Receive result frames: `{"type":"result","data":<ResolverResult>}`.
+        Final frame: `{"type":"done","data":{"summary":<CheckSummary>,"id":"..."}}`.
+      responses:
+        '101':
+          description: Switching Protocols (WebSocket)
+
+  /check/{id}:
+    get:
+      summary: Retrieve a saved check by ID
+      operationId: getCheck
+      tags: [Check]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Check found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Check'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /check/{id}/export:
+    get:
+      summary: Export a check result
+      operationId: exportCheck
+      tags: [Check]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: format
+          in: query
+          schema:
+            type: string
+            enum: [json, csv, png, svg, pdf]
+            default: json
+      responses:
+        '200':
+          description: Export file
+          content:
+            application/json: {}
+            text/csv: {}
+            image/png: {}
+            image/svg+xml: {}
+            application/pdf: {}
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /lookup:
+    post:
+      summary: Perform a detailed single-resolver DNS lookup
+      operationId: postLookup
+      tags: [Lookup]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, type]
+              properties:
+                name:
+                  type: string
+                type:
+                  type: string
+                resolver:
+                  type: string
+                  description: Resolver IP or resolver ID
+                protocol:
+                  type: string
+                  enum: [udp, tcp, dot, doh]
+      responses:
+        '200':
+          description: Lookup result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResolverResult'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /reverse:
+    post:
+      summary: Perform a reverse DNS (PTR) propagation check
+      operationId: postReverse
+      tags: [Reverse]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [ip]
+              properties:
+                ip:
+                  type: string
+                  description: IPv4 or IPv6 address
+                resolvers:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        '200':
+          description: PTR check result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Check'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /history:
+    get:
+      summary: List recent checks
+      operationId: listHistory
+      tags: [History]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+      responses:
+        '200':
+          description: List of checks
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Check'
+
+  /history/{id}:
+    delete:
+      summary: Delete a saved check
+      operationId: deleteHistory
+      tags: [History]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Deleted
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'

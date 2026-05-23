@@ -1,0 +1,32 @@
+linters:
+  enable:
+    - govet
+    - errcheck
+    - staticcheck
+    - revive
+    - gosec
+    - gocritic
+    - gocyclo
+    - gofumpt
+    - misspell
+    - ineffassign
+    - unused
+
+linters-settings:
+  gocyclo:
+    min-complexity: 15
+  revive:
+    rules:
+      - name: exported
+      - name: error-return
+      - name: error-strings
+      - name: var-naming
+
+issues:
+  exclude-rules:
+    - path: "_test\\.go"
+      linters:
+        - gosec
+        - errcheck
+  max-issues-per-linter: 0
+  max-same-issues: 0

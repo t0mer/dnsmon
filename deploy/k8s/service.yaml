@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: gdns
+  labels:
+    app: gdns
+spec:
+  type: ClusterIP
+  selector:
+    app: gdns
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http
+      protocol: TCP
