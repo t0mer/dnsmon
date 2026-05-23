@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en" class="">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>dnsmon — Settings</title>
+  <meta name="description" content="Configure dnsmon: notification channels, authentication, API tokens, resolvers, and monitoring schedules." />
+  <link rel="stylesheet" href="/css/app.css" />
+  <link rel="stylesheet" href="/vendor/flag-icons/css/flag-icons.min.css" />
+</head>
+<body class="min-h-screen" x-data>
+
+  <!-- Navigation -->
+  <nav class="sticky top-0 z-50 bg-white/90 dark:bg-slate-950/90 backdrop-blur border-b border-slate-200/80 dark:border-slate-800/80">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between h-14">
+        <a href="/" class="flex items-center gap-2 text-indigo-600 dark:text-indigo-400 font-bold text-lg" aria-label="dnsmon home">
+          <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+          </svg>
+          <span>dnsmon</span>
+        </a>
+        <div class="hidden md:flex items-center gap-1">
+          <a href="/" class="nav-link px-3 py-1.5 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800/60">Propagation</a>
+          <a href="/lookup" class="nav-link px-3 py-1.5 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800/60">DNS Lookup</a>
+          <a href="/reverse" class="nav-link px-3 py-1.5 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800/60">Reverse DNS</a>
+          <a href="/api-docs" class="nav-link px-3 py-1.5 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800/60">API</a>
+          <a href="/settings" class="nav-link-active px-3 py-1.5 rounded-md bg-indigo-50 dark:bg-indigo-950/40" aria-current="page">Settings</a>
+        </div>
+        <div class="flex items-center gap-1">
+          <button onclick="toggleDark()" class="p-2 rounded-lg text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors" aria-label="Toggle dark mode">
+            <svg class="w-4 h-4 dark:hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+            <svg class="w-4 h-4 hidden dark:block" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+          </button>
+          <button class="md:hidden p-2 rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors" aria-label="Toggle menu" @click="$refs.mobileNav.classList.toggle('hidden')">
+            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
+          </button>
+        </div>
+      </div>
+      <div x-ref="mobileNav" class="hidden md:hidden py-2 space-y-0.5">
+        <a href="/" class="flex items-center px-3 py-2 rounded-lg text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800">Propagation Check</a>
+        <a href="/lookup" class="flex items-center px-3 py-2 rounded-lg text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800">DNS Lookup</a>
+        <a href="/reverse" class="flex items-center px-3 py-2 rounded-lg text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800">Reverse DNS</a>
+        <a href="/api-docs" class="flex items-center px-3 py-2 rounded-lg text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800">API Docs</a>
+        <a href="/settings" class="flex items-center px-3 py-2 rounded-lg text-sm font-medium text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/40" aria-current="page">Settings</a>
+      </div>
+    </div>
+  </nav>
+
+  <main x-data="settingsApp()" class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+    <h1 class="text-2xl font-bold text-slate-900 dark:text-white mb-1">Settings</h1>
+    <p class="text-sm text-slate-500 dark:text-slate-400 mb-6">Configure notifications, access control, resolvers, and monitoring.</p>
+
+    <!-- Status toast -->
+    <div x-show="statusMsg" x-transition class="mb-4 px-4 py-2.5 rounded-lg text-sm"
+      :class="statusErr ? 'bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 ring-1 ring-rose-200 dark:ring-rose-900' : 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 ring-1 ring-emerald-200 dark:ring-emerald-900'"
+      x-text="statusMsg" role="status"></div>
+
+    <!-- Tabs -->
+    <div class="flex flex-wrap gap-1 border-b border-slate-200 dark:border-slate-800 mb-6">
+      <template x-for="tab in [
+        {k:'notifications', l:'Notifications'},
+        {k:'auth', l:'Authentication'},
+        {k:'tokens', l:'API Tokens'},
+        {k:'resolvers', l:'Resolvers'},
+        {k:'schedules', l:'Schedulers'},
+      ]" :key="tab.k">
+        <button @click="activeTab = tab.k"
+          class="px-3 py-2 text-sm font-medium -mb-px border-b-2 transition-colors"
+          :class="activeTab === tab.k ? 'border-indigo-500 text-indigo-600 dark:text-indigo-400' : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'"
+          x-text="tab.l"></button>
+      </template>
+    </div>
+
+    <div x-show="loading" class="py-16 text-center text-slate-400 text-sm">Loading…</div>
+
+    <div x-show="!loading">
+
+      <!-- ============ NOTIFICATIONS ============ -->
+      <section x-show="activeTab === 'notifications'" class="space-y-4">
+        <div class="flex flex-wrap items-center gap-2">
+          <span class="text-sm text-slate-500 dark:text-slate-400 mr-1">Add channel:</span>
+          <template x-for="t in ['shoutrrr','greenapi','gowa']" :key="t">
+            <button @click="addChannel(t)" class="btn-sm ring-1 ring-slate-200 dark:ring-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800" x-text="channelTypeLabel(t)"></button>
+          </template>
+        </div>
+
+        <p x-show="notifications.length === 0" class="text-sm text-slate-400 dark:text-slate-500 py-4">No notification channels configured.</p>
+
+        <template x-for="(ch, i) in notifications" :key="i">
+          <div class="card card-body space-y-3">
+            <div class="flex items-center justify-between gap-3">
+              <div class="flex items-center gap-2">
+                <span class="badge-ok" x-text="channelTypeLabel(ch.type)"></span>
+                <label class="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
+                  <input type="checkbox" x-model="ch.enabled" class="rounded" /> Enabled
+                </label>
+              </div>
+              <div class="flex items-center gap-2">
+                <button @click="testChannel(i)" class="btn-sm ring-1 ring-slate-200 dark:ring-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800">Test</button>
+                <button @click="removeChannel(i)" class="btn-sm text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30">Remove</button>
+              </div>
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Name</label>
+              <input type="text" x-model="ch.name" class="input" placeholder="e.g. Ops alerts" />
+            </div>
+            <div class="grid sm:grid-cols-2 gap-3">
+              <template x-for="field in channelFields(ch.type)" :key="field">
+                <div>
+                  <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1" x-text="field"></label>
+                  <input :type="field.includes('password') || field === 'token' ? 'password' : 'text'"
+                    x-model="ch.config[field]" class="input font-mono text-xs" autocomplete="off" />
+                </div>
+              </template>
+            </div>
+          </div>
+        </template>
+
+        <button @click="saveSettings()" :disabled="saving" class="btn bg-indigo-600 hover:bg-indigo-700 text-white">
+          <span x-text="saving ? 'Saving…' : 'Save notifications'"></span>
+        </button>
+      </section>
+
+      <!-- ============ AUTHENTICATION ============ -->
+      <section x-show="activeTab === 'auth'" class="space-y-4 max-w-lg">
+        <label class="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
+          <input type="checkbox" x-model="auth.enabled" class="rounded" />
+          Protect the UI with a username and password
+        </label>
+        <div x-show="auth.enabled" class="space-y-3">
+          <div>
+            <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Username</label>
+            <input type="text" x-model="auth.username" class="input" autocomplete="username" />
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">
+              Password <span x-show="auth.password_set" class="text-slate-400">(leave blank to keep current)</span>
+            </label>
+            <input type="password" x-model="auth.password" class="input" autocomplete="new-password"
+              :placeholder="auth.password_set ? '••••••••' : 'Set a password'" />
+          </div>
+        </div>
+        <p class="text-xs text-slate-400 dark:text-slate-500">Enforcement of UI login is added in a later release; this stores the credentials.</p>
+        <button @click="saveSettings()" :disabled="saving" class="btn bg-indigo-600 hover:bg-indigo-700 text-white">
+          <span x-text="saving ? 'Saving…' : 'Save authentication'"></span>
+        </button>
+      </section>
+
+      <!-- ============ API TOKENS ============ -->
+      <section x-show="activeTab === 'tokens'" class="space-y-4">
+        <div class="flex flex-wrap items-end gap-2">
+          <div class="flex-1 min-w-[12rem]">
+            <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Token name</label>
+            <input type="text" x-model="newTokenName" class="input" placeholder="e.g. CI pipeline" @keydown.enter="createToken()" />
+          </div>
+          <button @click="createToken()" class="btn bg-indigo-600 hover:bg-indigo-700 text-white">Create token</button>
+        </div>
+
+        <!-- New token shown once -->
+        <div x-show="createdToken" class="card card-body bg-amber-50 dark:bg-amber-950/30 ring-1 ring-amber-200 dark:ring-amber-900">
+          <p class="text-xs text-amber-700 dark:text-amber-300 mb-1.5 font-medium">Copy this token now — it won't be shown again.</p>
+          <div class="flex items-center gap-2">
+            <code class="flex-1 text-xs font-mono break-all bg-white dark:bg-slate-900 rounded px-2 py-1.5" x-text="createdToken"></code>
+            <button @click="navigator.clipboard.writeText(createdToken); flash('Copied.')" class="btn-sm ring-1 ring-amber-300 dark:ring-amber-800">Copy</button>
+            <button @click="createdToken = ''" class="btn-sm">Dismiss</button>
+          </div>
+        </div>
+
+        <p x-show="tokens.length === 0" class="text-sm text-slate-400 dark:text-slate-500 py-4">No API tokens yet.</p>
+        <div x-show="tokens.length > 0" class="card overflow-hidden">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="bg-slate-50/80 dark:bg-slate-800/40 text-xs text-slate-500 dark:text-slate-400">
+                <th class="text-left px-4 py-2.5 font-medium">Name</th>
+                <th class="text-left px-4 py-2.5 font-medium">Prefix</th>
+                <th class="text-left px-4 py-2.5 font-medium">Created</th>
+                <th class="px-4 py-2.5"></th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 dark:divide-slate-800/60">
+              <template x-for="t in tokens" :key="t.id">
+                <tr>
+                  <td class="px-4 py-2.5 text-slate-900 dark:text-white" x-text="t.name"></td>
+                  <td class="px-4 py-2.5 font-mono text-xs text-slate-500" x-text="t.prefix + '…'"></td>
+                  <td class="px-4 py-2.5 text-xs text-slate-400" x-text="new Date(t.created_at).toLocaleString()"></td>
+                  <td class="px-4 py-2.5 text-right">
+                    <button @click="deleteToken(t.id)" class="btn-sm text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30">Revoke</button>
+                  </td>
+                </tr>
+              </template>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ============ RESOLVERS ============ -->
+      <section x-show="activeTab === 'resolvers'" class="space-y-4">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <input type="text" x-model="resolverQuery" class="input max-w-xs" placeholder="Filter resolvers…" />
+          <span class="text-xs text-slate-400 dark:text-slate-500" x-text="`${disabledResolvers.length} disabled of ${resolvers.length}`"></span>
+        </div>
+        <div class="card overflow-hidden max-h-[28rem] overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800/60">
+          <template x-for="r in filteredResolvers" :key="r.id">
+            <label class="flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 dark:hover:bg-slate-800/30 cursor-pointer">
+              <input type="checkbox" :checked="isResolverEnabled(r.id)" @change="toggleResolver(r.id)" class="rounded" />
+              <span class="fi rounded-sm ring-1 ring-black/5" :class="'fi-' + (r.country || 'xx').toLowerCase()" aria-hidden="true"></span>
+              <span class="flex-1 min-w-0">
+                <span class="text-sm text-slate-900 dark:text-white" x-text="r.name"></span>
+                <span class="text-xs text-slate-400 dark:text-slate-500 ml-2 font-mono" x-text="r.ip"></span>
+              </span>
+              <span class="text-xs text-slate-400 dark:text-slate-500" x-text="[r.city, r.country].filter(Boolean).join(', ')"></span>
+            </label>
+          </template>
+        </div>
+        <button @click="saveSettings()" :disabled="saving" class="btn bg-indigo-600 hover:bg-indigo-700 text-white">
+          <span x-text="saving ? 'Saving…' : 'Save resolver selection'"></span>
+        </button>
+      </section>
+
+      <!-- ============ SCHEDULERS ============ -->
+      <section x-show="activeTab === 'schedules'" class="space-y-4">
+        <div class="card card-body grid sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Name</label>
+            <input type="text" x-model="scheduleForm.name" class="input" placeholder="e.g. Watch example.com" />
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Domain</label>
+            <input type="text" x-model="scheduleForm.domain" class="input" placeholder="example.com" />
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Record type</label>
+            <select x-model="scheduleForm.type" class="input">
+              <template x-for="t in ['A','AAAA','CNAME','MX','NS','TXT','CAA','SRV','SOA']" :key="t">
+                <option x-text="t"></option>
+              </template>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Interval (seconds)</label>
+            <input type="number" min="30" x-model.number="scheduleForm.interval_sec" class="input" />
+          </div>
+          <div class="sm:col-span-2 flex items-center justify-between">
+            <label class="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
+              <input type="checkbox" x-model="scheduleForm.enabled" class="rounded" /> Enabled
+            </label>
+            <button @click="createSchedule()" class="btn bg-indigo-600 hover:bg-indigo-700 text-white">Add schedule</button>
+          </div>
+        </div>
+
+        <p x-show="schedules.length === 0" class="text-sm text-slate-400 dark:text-slate-500 py-4">No schedules yet.</p>
+        <div x-show="schedules.length > 0" class="card overflow-hidden">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="bg-slate-50/80 dark:bg-slate-800/40 text-xs text-slate-500 dark:text-slate-400">
+                <th class="text-left px-4 py-2.5 font-medium">Name</th>
+                <th class="text-left px-4 py-2.5 font-medium">Domain</th>
+                <th class="text-left px-4 py-2.5 font-medium">Type</th>
+                <th class="text-left px-4 py-2.5 font-medium">Every</th>
+                <th class="text-left px-4 py-2.5 font-medium">Status</th>
+                <th class="px-4 py-2.5"></th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 dark:divide-slate-800/60">
+              <template x-for="s in schedules" :key="s.id">
+                <tr>
+                  <td class="px-4 py-2.5 text-slate-900 dark:text-white" x-text="s.name"></td>
+                  <td class="px-4 py-2.5 font-mono text-xs" x-text="s.domain"></td>
+                  <td class="px-4 py-2.5" x-text="s.type"></td>
+                  <td class="px-4 py-2.5 text-xs text-slate-500" x-text="intervalLabel(s.interval_sec)"></td>
+                  <td class="px-4 py-2.5">
+                    <span :class="s.enabled ? 'badge-ok' : 'badge-error'" x-text="s.enabled ? 'Enabled' : 'Disabled'"></span>
+                  </td>
+                  <td class="px-4 py-2.5 text-right">
+                    <button @click="deleteSchedule(s.id)" class="btn-sm text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30">Delete</button>
+                  </td>
+                </tr>
+              </template>
+            </tbody>
+          </table>
+        </div>
+        <p class="text-xs text-slate-400 dark:text-slate-500">Schedule execution and change alerts are added in a later release; this manages the definitions.</p>
+      </section>
+
+    </div>
+  </main>
+
+  <script defer src="/js/app.js"></script>
+  <script defer src="/vendor/alpine.js"></script>
+</body>
+</html>

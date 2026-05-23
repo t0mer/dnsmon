@@ -483,10 +483,235 @@ function reverseApp() {
 }
 
 // ---------------------------------------------------------------------------
+// settingsApp — Settings page (settings.html)
+// ---------------------------------------------------------------------------
+function settingsApp() {
+  return {
+    activeTab: 'notifications',
+    loading: true,
+    saving: false,
+    statusMsg: '',
+    statusErr: false,
+
+    // Settings document
+    auth: { enabled: false, username: '', password: '', password_set: false },
+    notifications: [],
+    disabledResolvers: [],
+
+    // API tokens
+    tokens: [],
+    newTokenName: '',
+    createdToken: '',
+
+    // Schedules
+    schedules: [],
+    scheduleForm: { name: '', domain: '', type: 'A', interval_sec: 300, enabled: true },
+
+    // Resolvers
+    resolvers: [],
+    resolverQuery: '',
+
+    async init() {
+      await this.loadAll();
+    },
+
+    async loadAll() {
+      this.loading = true;
+      try {
+        const [s, tk, sc, rs] = await Promise.all([
+          fetch('/api/v1/settings').then((r) => r.json()),
+          fetch('/api/v1/settings/tokens').then((r) => r.json()),
+          fetch('/api/v1/settings/schedules').then((r) => r.json()),
+          fetch('/api/v1/resolvers').then((r) => r.json()),
+        ]);
+        this.auth = {
+          enabled: !!s.auth.enabled,
+          username: s.auth.username || '',
+          password: '',
+          password_set: !!s.auth.password_set,
+        };
+        this.notifications = s.notifications || [];
+        this.disabledResolvers = s.disabled_resolvers || [];
+        this.tokens = tk || [];
+        this.schedules = sc || [];
+        this.resolvers = rs || [];
+      } catch (e) {
+        this.flash('Failed to load settings: ' + e.message, true);
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    flash(msg, err = false) {
+      this.statusMsg = msg;
+      this.statusErr = err;
+      setTimeout(() => { this.statusMsg = ''; }, 4000);
+    },
+
+    // ---- Settings document (auth + notifications + disabled resolvers) ----
+    async saveSettings() {
+      this.saving = true;
+      try {
+        const payload = {
+          auth: {
+            enabled: this.auth.enabled,
+            username: this.auth.username,
+            password: this.auth.password || '',
+          },
+          notifications: this.notifications,
+          disabled_resolvers: this.disabledResolvers,
+        };
+        const resp = await fetch('/api/v1/settings', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        if (!resp.ok) {
+          const e = await resp.json().catch(() => ({}));
+          throw new Error(e?.error?.message || `HTTP ${resp.status}`);
+        }
+        const s = await resp.json();
+        this.auth = {
+          enabled: !!s.auth.enabled,
+          username: s.auth.username || '',
+          password: '',
+          password_set: !!s.auth.password_set,
+        };
+        this.notifications = s.notifications || [];
+        this.disabledResolvers = s.disabled_resolvers || [];
+        this.flash('Settings saved.');
+      } catch (e) {
+        this.flash(e.message, true);
+      } finally {
+        this.saving = false;
+      }
+    },
+
+    // ---- Notification channels ----
+    channelDefaults(type) {
+      if (type === 'shoutrrr') return { url: '' };
+      if (type === 'greenapi') return { instance_id: '', token: '', recipient: '' };
+      if (type === 'gowa') return { base_url: '', username: '', password: '', recipient: '' };
+      return {};
+    },
+    channelFields(type) {
+      return Object.keys(this.channelDefaults(type));
+    },
+    channelTypeLabel(type) {
+      return { shoutrrr: 'Shoutrrr', greenapi: 'WhatsApp (GreenAPI)', gowa: 'WhatsApp (go-whatsapp-web)' }[type] || type;
+    },
+    addChannel(type) {
+      this.notifications.push({ id: '', type, name: '', enabled: true, config: this.channelDefaults(type) });
+    },
+    removeChannel(i) {
+      this.notifications.splice(i, 1);
+    },
+    async testChannel(i) {
+      const resp = await fetch('/api/v1/settings/notifications/test', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(this.notifications[i]),
+      });
+      const e = await resp.json().catch(() => ({}));
+      this.flash(e?.error?.message || `HTTP ${resp.status}`, !resp.ok);
+    },
+
+    // ---- API tokens ----
+    async createToken() {
+      if (!this.newTokenName.trim()) return;
+      const resp = await fetch('/api/v1/settings/tokens', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: this.newTokenName.trim() }),
+      });
+      if (!resp.ok) {
+        const e = await resp.json().catch(() => ({}));
+        this.flash(e?.error?.message || 'Failed to create token', true);
+        return;
+      }
+      const t = await resp.json();
+      this.createdToken = t.token;
+      this.newTokenName = '';
+      this.tokens.unshift({ id: t.id, name: t.name, prefix: t.prefix, created_at: t.created_at });
+    },
+    async deleteToken(id) {
+      const resp = await fetch('/api/v1/settings/tokens/' + id, { method: 'DELETE' });
+      if (resp.ok || resp.status === 204) {
+        this.tokens = this.tokens.filter((t) => t.id !== id);
+        this.flash('Token revoked.');
+      } else {
+        this.flash('Failed to revoke token', true);
+      }
+    },
+
+    // ---- Schedules ----
+    async createSchedule() {
+      const f = this.scheduleForm;
+      if (!f.name.trim() || !f.domain.trim()) return;
+      const resp = await fetch('/api/v1/settings/schedules', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: f.name.trim(),
+          domain: f.domain.trim(),
+          type: f.type,
+          interval_sec: Number(f.interval_sec) || 300,
+          enabled: f.enabled,
+        }),
+      });
+      if (!resp.ok) {
+        const e = await resp.json().catch(() => ({}));
+        this.flash(e?.error?.message || 'Failed to create schedule', true);
+        return;
+      }
+      const sc = await resp.json();
+      this.schedules.unshift(sc);
+      this.scheduleForm = { name: '', domain: '', type: 'A', interval_sec: 300, enabled: true };
+      this.flash('Schedule created.');
+    },
+    async deleteSchedule(id) {
+      const resp = await fetch('/api/v1/settings/schedules/' + id, { method: 'DELETE' });
+      if (resp.ok || resp.status === 204) {
+        this.schedules = this.schedules.filter((s) => s.id !== id);
+        this.flash('Schedule deleted.');
+      } else {
+        this.flash('Failed to delete schedule', true);
+      }
+    },
+    intervalLabel(sec) {
+      if (sec % 3600 === 0) return sec / 3600 + 'h';
+      if (sec % 60 === 0) return sec / 60 + 'm';
+      return sec + 's';
+    },
+
+    // ---- Resolver enable/disable ----
+    isResolverEnabled(id) {
+      return !this.disabledResolvers.includes(id);
+    },
+    toggleResolver(id) {
+      if (this.disabledResolvers.includes(id)) {
+        this.disabledResolvers = this.disabledResolvers.filter((x) => x !== id);
+      } else {
+        this.disabledResolvers.push(id);
+      }
+    },
+    get filteredResolvers() {
+      const q = this.resolverQuery.toLowerCase();
+      if (!q) return this.resolvers;
+      return this.resolvers.filter((r) =>
+        (r.name + ' ' + r.country + ' ' + r.city + ' ' + r.ip).toLowerCase().includes(q));
+    },
+
+    countryName,
+  };
+}
+
+// ---------------------------------------------------------------------------
 // Register Alpine.js components
 // ---------------------------------------------------------------------------
 document.addEventListener('alpine:init', () => {
   Alpine.data('dnsmonApp', dnsmonApp);
   Alpine.data('lookupApp', lookupApp);
   Alpine.data('reverseApp', reverseApp);
+  Alpine.data('settingsApp', settingsApp);
 });

@@ -84,6 +84,10 @@ func (s *Server) routes() {
 		r.URL.Path = "/about.html"
 		fileServer.ServeHTTP(w, r)
 	})
+	r.Get("/settings", func(w http.ResponseWriter, r *http.Request) {
+		r.URL.Path = "/settings.html"
+		fileServer.ServeHTTP(w, r)
+	})
 	r.Get("/api-docs", func(w http.ResponseWriter, r *http.Request) {
 		r.URL.Path = "/api-docs.html"
 		fileServer.ServeHTTP(w, r)
@@ -115,6 +119,18 @@ func (s *Server) routes() {
 
 		r.Get("/history", v1.ListHistory(s.storage))
 		r.Delete("/history/{id}", v1.DeleteHistory(s.storage))
+
+		// Settings
+		r.Get("/settings", v1.GetSettings(s.storage))
+		r.Put("/settings", v1.UpdateSettings(s.storage))
+		r.Post("/settings/notifications/test", v1.TestNotification())
+		r.Get("/settings/tokens", v1.ListTokens(s.storage))
+		r.Post("/settings/tokens", v1.CreateToken(s.storage))
+		r.Delete("/settings/tokens/{id}", v1.DeleteToken(s.storage))
+		r.Get("/settings/schedules", v1.ListSchedules(s.storage))
+		r.Post("/settings/schedules", v1.CreateSchedule(s.storage))
+		r.Put("/settings/schedules/{id}", v1.UpdateSchedule(s.storage))
+		r.Delete("/settings/schedules/{id}", v1.DeleteSchedule(s.storage))
 	})
 
 	// Prometheus metrics
