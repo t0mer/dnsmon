@@ -18,6 +18,9 @@ type Settings struct {
 	Auth              AuthSettings          `json:"auth"`
 	Notifications     []NotificationChannel `json:"notifications"`
 	DisabledResolvers []string              `json:"disabled_resolvers"`
+	// SessionSecret signs UI session cookies. Generated on demand; persisted
+	// but never exposed to API clients.
+	SessionSecret string `json:"session_secret"`
 }
 
 // AuthSettings controls optional username/password protection of the UI.

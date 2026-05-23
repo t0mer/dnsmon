@@ -20,6 +20,17 @@ components:
       bearerFormat: API key
 
   schemas:
+    SessionStatus:
+      type: object
+      properties:
+        enabled:
+          type: boolean
+          description: Whether UI authentication is enabled.
+        authenticated:
+          type: boolean
+        username:
+          type: string
+
     NotificationChannel:
       type: object
       properties:
@@ -627,6 +638,64 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/login:
+    post:
+      summary: Sign in to the UI
+      description: Verifies the admin credentials (when auth is enabled) and sets an HttpOnly session cookie.
+      operationId: login
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [username, password]
+              properties:
+                username:
+                  type: string
+                password:
+                  type: string
+      responses:
+        '200':
+          description: Authenticated; session cookie set
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionStatus'
+        '401':
+          description: Invalid username or password
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/logout:
+    post:
+      summary: Sign out
+      operationId: logout
+      tags: [Auth]
+      responses:
+        '200':
+          description: Session cookie cleared
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionStatus'
+
+  /auth/session:
+    get:
+      summary: Current session status
+      operationId: authSession
+      tags: [Auth]
+      responses:
+        '200':
+          description: Whether auth is enabled and whether the caller is authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionStatus'
 
   /settings:
     get:
