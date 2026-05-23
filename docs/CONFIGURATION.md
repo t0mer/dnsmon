@@ -19,6 +19,19 @@ Flags override the config file and environment for the current run.
 | `--resolvers-file` | Path to an extra resolvers JSON/YAML file. |
 | `--service` | Manage dnsmon as a system service: `install`, `uninstall`, `start`, `stop`, or `restart`. |
 
+### The `PORT` environment variable
+
+For container platforms (Docker, Cloud Run, Heroku, etc.) the bare `PORT`
+environment variable sets the server port without needing the `DNSMON_` prefix:
+
+```bash
+PORT=9090 dnsmon          # listens on :9090
+```
+
+`PORT` overrides the port in `server.listen` (preserving any host). Precedence,
+lowest to highest: `server.listen` (config / `DNSMON_SERVER_LISTEN`) < `PORT`
+env < `--listen` flag < `--port` flag.
+
 ### Running as a system service
 
 `--service` registers dnsmon with the host service manager (Windows Service
