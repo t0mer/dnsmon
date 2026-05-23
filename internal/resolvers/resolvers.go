@@ -3,7 +3,7 @@ package resolvers
 import (
 	"fmt"
 
-	"github.com/tomerklein/gdns/internal/dnsclient"
+	"github.com/t0mer/dnsmon/internal/dnsclient"
 )
 
 // DefaultPort is the standard DNS port.

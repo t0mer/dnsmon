@@ -8,8 +8,8 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/tomerklein/gdns/internal/config"
-	"github.com/tomerklein/gdns/internal/dnsclient"
+	"github.com/t0mer/dnsmon/internal/config"
+	"github.com/t0mer/dnsmon/internal/dnsclient"
 )
 
 // Registry holds the set of known resolvers.

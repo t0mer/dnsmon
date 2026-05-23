@@ -1,16 +1,16 @@
 # Deployment Guide
 
-This guide covers deploying gdns in various environments.
+This guide covers deploying dnsmon in various environments.
 
 ---
 
 ## Quick Start — Docker Compose (SQLite)
 
-The simplest way to run gdns. Data persists in a named Docker volume.
+The simplest way to run dnsmon. Data persists in a named Docker volume.
 
 ```bash
-git clone https://github.com/tomerklein/gdns.git
-cd gdns
+git clone https://github.com/t0mer/dnsmon.git
+cd dnsmon
 docker compose -f deploy/docker-compose.sqlite.yml up -d
 ```
 
@@ -28,13 +28,13 @@ docker compose -f deploy/docker-compose.yml up -d
 ```
 
 This starts three containers:
-- `gdns` — the Go binary
+- `dnsmon` — the Go binary
 - `postgres:16-alpine` — persistent check history
 - `redis:7-alpine` — distributed cache and rate-limit state
 
 Check logs:
 ```bash
-docker compose -f deploy/docker-compose.yml logs -f gdns
+docker compose -f deploy/docker-compose.yml logs -f dnsmon
 ```
 
 ---
@@ -52,22 +52,22 @@ kubectl apply -f deploy/k8s/ingress.yaml
 The Ingress assumes:
 - `ingress-nginx` is installed in the cluster.
 - `cert-manager` is installed and a `ClusterIssuer` named `letsencrypt-prod` exists.
-- You update `gdns.example.com` to your real hostname.
+- You update `dnsmon.example.com` to your real hostname.
 
-For custom configuration, mount a ConfigMap as `/etc/gdns/config.yaml` and set the
+For custom configuration, mount a ConfigMap as `/etc/dnsmon/config.yaml` and set the
 `--config` flag:
 
 ```yaml
 # In deployment.yaml, add to spec.containers[0]:
-args: ["--config", "/etc/gdns/config.yaml"]
+args: ["--config", "/etc/dnsmon/config.yaml"]
 volumeMounts:
   - name: config
-    mountPath: /etc/gdns
+    mountPath: /etc/dnsmon
     readOnly: true
 volumes:
   - name: config
     configMap:
-      name: gdns-config
+      name: dnsmon-config
 ```
 
 ### Persistent storage on Kubernetes
@@ -81,13 +81,13 @@ volumeMounts:
 volumes:
   - name: data
     persistentVolumeClaim:
-      claimName: gdns-data
+      claimName: dnsmon-data
 ```
 
 For Postgres, deploy a separate Postgres instance (or use a managed database) and set:
 ```
-GDNS_STORAGE_DRIVER=postgres
-GDNS_STORAGE_DSN=postgres://user:pass@host:5432/gdns?sslmode=require
+DNSMON_STORAGE_DRIVER=postgres
+DNSMON_STORAGE_DSN=postgres://user:pass@host:5432/dnsmon?sslmode=require
 ```
 
 ---
@@ -96,56 +96,56 @@ GDNS_STORAGE_DSN=postgres://user:pass@host:5432/gdns?sslmode=require
 
 1. **Install the binary:**
    ```bash
-   sudo cp bin/gdns /usr/local/bin/gdns
-   sudo chmod +x /usr/local/bin/gdns
+   sudo cp bin/dnsmon /usr/local/bin/dnsmon
+   sudo chmod +x /usr/local/bin/dnsmon
    ```
 
 2. **Create a dedicated user:**
    ```bash
-   sudo useradd --system --no-create-home --shell /usr/sbin/nologin gdns
+   sudo useradd --system --no-create-home --shell /usr/sbin/nologin dnsmon
    ```
 
 3. **Create config directory and file:**
    ```bash
-   sudo mkdir -p /etc/gdns
-   sudo cp config/config.example.yaml /etc/gdns/config.yaml
-   sudo chown -R gdns:gdns /etc/gdns
+   sudo mkdir -p /etc/dnsmon
+   sudo cp config/config.example.yaml /etc/dnsmon/config.yaml
+   sudo chown -R dnsmon:dnsmon /etc/dnsmon
    ```
 
 4. **Install the systemd unit:**
    ```bash
-   sudo cp deploy/systemd/gdns.service /etc/systemd/system/
+   sudo cp deploy/systemd/dnsmon.service /etc/systemd/system/
    sudo systemctl daemon-reload
-   sudo systemctl enable --now gdns
+   sudo systemctl enable --now dnsmon
    ```
 
 5. **Check status:**
    ```bash
-   sudo systemctl status gdns
-   sudo journalctl -u gdns -f
+   sudo systemctl status dnsmon
+   sudo journalctl -u dnsmon -f
    ```
 
 ---
 
 ## Behind Nginx (Reverse Proxy)
 
-gdns expects to run behind a reverse proxy that handles TLS termination.
+dnsmon expects to run behind a reverse proxy that handles TLS termination.
 
 Minimal Nginx config:
 
 ```nginx
 server {
     listen 80;
-    server_name gdns.example.com;
+    server_name dnsmon.example.com;
     return 301 https://$host$request_uri;
 }
 
 server {
     listen 443 ssl http2;
-    server_name gdns.example.com;
+    server_name dnsmon.example.com;
 
-    ssl_certificate     /etc/letsencrypt/live/gdns.example.com/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/gdns.example.com/privkey.pem;
+    ssl_certificate     /etc/letsencrypt/live/dnsmon.example.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/dnsmon.example.com/privkey.pem;
     ssl_protocols       TLSv1.2 TLSv1.3;
     ssl_ciphers         HIGH:!aNULL:!MD5;
 
@@ -176,37 +176,37 @@ sudo nginx -t && sudo systemctl reload nginx
 
 ## Environment Variables Reference
 
-All configuration options from `config.yaml` can be overridden with `GDNS_*` environment variables. The mapping is: dots become underscores, all uppercase.
+All configuration options from `config.yaml` can be overridden with `DNSMON_*` environment variables. The mapping is: dots become underscores, all uppercase.
 
 | Variable | Default | Description |
 |---|---|---|
-| `GDNS_SERVER_LISTEN` | `:8080` | Listen address |
-| `GDNS_SERVER_BASE_URL` | `http://localhost:8080` | Public URL for permalinks |
-| `GDNS_SERVER_READ_TIMEOUT` | `10s` | HTTP read timeout |
-| `GDNS_SERVER_WRITE_TIMEOUT` | `30s` | HTTP write timeout |
-| `GDNS_DNS_QUERY_TIMEOUT` | `3s` | Per-resolver DNS query timeout |
-| `GDNS_DNS_PER_RESOLVER_CONCURRENCY` | `4` | Max concurrent outbound queries |
-| `GDNS_DNS_DEFAULT_PROTOCOL` | `udp` | Default DNS transport |
-| `GDNS_DNS_RETRY` | `1` | Query retries on failure |
-| `GDNS_RESOLVERS_BUILTIN` | `true` | Use built-in resolver list |
-| `GDNS_RESOLVERS_FILE` | `` | Path to extra resolvers file |
-| `GDNS_RESOLVERS_COUNTRIES` | `` | Country whitelist (comma-separated) |
-| `GDNS_STORAGE_DRIVER` | `sqlite` | `sqlite`, `postgres`, or `none` |
-| `GDNS_STORAGE_DSN` | (SQLite file) | Data source name |
-| `GDNS_STORAGE_RETENTION_DAYS` | `30` | Auto-delete checks older than N days |
-| `GDNS_CACHE_DRIVER` | `memory` | `memory`, `redis`, or `none` |
-| `GDNS_CACHE_TTL` | `60s` | Cache entry TTL |
-| `GDNS_CACHE_SIZE` | `10000` | LRU cache max entries (memory only) |
-| `GDNS_CACHE_REDIS_ADDR` | `` | Redis address (e.g. `localhost:6379`) |
-| `GDNS_RATELIMIT_ENABLED` | `true` | Enable rate limiting |
-| `GDNS_RATELIMIT_ANON_PER_MIN` | `30` | Anonymous req/min per IP |
-| `GDNS_RATELIMIT_KEY_PER_MIN` | `600` | API key req/min |
-| `GDNS_GEOIP_ENABLED` | `false` | Enable MaxMind GeoIP |
-| `GDNS_GEOIP_MMDB_PATH` | `` | Path to GeoLite2-City.mmdb |
-| `GDNS_LOG_LEVEL` | `info` | `debug`, `info`, `warn`, `error` |
-| `GDNS_LOG_FORMAT` | `json` | `json` or `text` |
-| `GDNS_METRICS_ENABLED` | `true` | Enable Prometheus metrics |
-| `GDNS_METRICS_PATH` | `/metrics` | Metrics endpoint path |
+| `DNSMON_SERVER_LISTEN` | `:8080` | Listen address |
+| `DNSMON_SERVER_BASE_URL` | `http://localhost:8080` | Public URL for permalinks |
+| `DNSMON_SERVER_READ_TIMEOUT` | `10s` | HTTP read timeout |
+| `DNSMON_SERVER_WRITE_TIMEOUT` | `30s` | HTTP write timeout |
+| `DNSMON_DNS_QUERY_TIMEOUT` | `3s` | Per-resolver DNS query timeout |
+| `DNSMON_DNS_PER_RESOLVER_CONCURRENCY` | `4` | Max concurrent outbound queries |
+| `DNSMON_DNS_DEFAULT_PROTOCOL` | `udp` | Default DNS transport |
+| `DNSMON_DNS_RETRY` | `1` | Query retries on failure |
+| `DNSMON_RESOLVERS_BUILTIN` | `true` | Use built-in resolver list |
+| `DNSMON_RESOLVERS_FILE` | `` | Path to extra resolvers file |
+| `DNSMON_RESOLVERS_COUNTRIES` | `` | Country whitelist (comma-separated) |
+| `DNSMON_STORAGE_DRIVER` | `sqlite` | `sqlite`, `postgres`, or `none` |
+| `DNSMON_STORAGE_DSN` | (SQLite file) | Data source name |
+| `DNSMON_STORAGE_RETENTION_DAYS` | `30` | Auto-delete checks older than N days |
+| `DNSMON_CACHE_DRIVER` | `memory` | `memory`, `redis`, or `none` |
+| `DNSMON_CACHE_TTL` | `60s` | Cache entry TTL |
+| `DNSMON_CACHE_SIZE` | `10000` | LRU cache max entries (memory only) |
+| `DNSMON_CACHE_REDIS_ADDR` | `` | Redis address (e.g. `localhost:6379`) |
+| `DNSMON_RATELIMIT_ENABLED` | `true` | Enable rate limiting |
+| `DNSMON_RATELIMIT_ANON_PER_MIN` | `30` | Anonymous req/min per IP |
+| `DNSMON_RATELIMIT_KEY_PER_MIN` | `600` | API key req/min |
+| `DNSMON_GEOIP_ENABLED` | `false` | Enable MaxMind GeoIP |
+| `DNSMON_GEOIP_MMDB_PATH` | `` | Path to GeoLite2-City.mmdb |
+| `DNSMON_LOG_LEVEL` | `info` | `debug`, `info`, `warn`, `error` |
+| `DNSMON_LOG_FORMAT` | `json` | `json` or `text` |
+| `DNSMON_METRICS_ENABLED` | `true` | Enable Prometheus metrics |
+| `DNSMON_METRICS_PATH` | `/metrics` | Metrics endpoint path |
 
 ---
 
@@ -216,8 +216,8 @@ Requirements: Go 1.23+, Node.js 20+ (build-time only).
 
 ```bash
 # Clone
-git clone https://github.com/tomerklein/gdns.git
-cd gdns
+git clone https://github.com/t0mer/dnsmon.git
+cd dnsmon
 
 # Build UI (Tailwind CSS)
 make ui
@@ -226,7 +226,7 @@ make ui
 make build
 
 # Run
-./bin/gdns --config config/config.example.yaml
+./bin/dnsmon --config config/config.example.yaml
 ```
 
 ---

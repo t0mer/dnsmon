@@ -1,6 +1,6 @@
 # CLAUDE.md — Self-Hosted DNS Propagation Checker
 
-> Project codename: **`gdns`** (Global DNS Checker)
+> Project codename: **`dnsmon`** (Global DNS Checker)
 > A self-hosted, open-source alternative to [whatsmydns.net](https://www.whatsmydns.net/), written in **Go**.
 
 This file is the single source of truth for Claude (and any other contributor / agent) working on this codebase. Read it in full before generating, modifying, or refactoring anything.
@@ -9,7 +9,7 @@ This file is the single source of truth for Claude (and any other contributor / 
 
 ## 1. Project Overview
 
-`gdns` is a web service that performs **DNS propagation checks** by querying a configurable list of public (and optionally private) DNS resolvers around the world and returning the answers each resolver gives for a requested record. It mirrors the feature set of `whatsmydns.net`:
+`dnsmon` is a web service that performs **DNS propagation checks** by querying a configurable list of public (and optionally private) DNS resolvers around the world and returning the answers each resolver gives for a requested record. It mirrors the feature set of `whatsmydns.net`:
 
 - Global DNS propagation checks across 100+ resolvers
 - Single-resolver authoritative DNS lookup ("DNS Lookup" tool)
@@ -33,7 +33,7 @@ The goal: **deploy with one `docker compose up` and have a private whatsmydns in
 | Language             | Go 1.23+                                           | Single static binary, great concurrency for fan-out DNS queries.        |
 | HTTP router          | `chi` (`github.com/go-chi/chi/v5`)                 | Idiomatic, fast, middleware-friendly, std-lib `http.Handler` compatible. |
 | DNS library          | `github.com/miekg/dns`                             | Industry standard, supports every record type we need.                  |
-| Config               | `github.com/spf13/viper` + env vars                | YAML config + `GDNS_*` env overrides.                                    |
+| Config               | `github.com/spf13/viper` + env vars                | YAML config + `DNSMON_*` env overrides.                                    |
 | Logging              | `log/slog` (stdlib, structured)                    | Use JSON handler in prod, text in dev.                                  |
 | Validation           | `github.com/go-playground/validator/v10`           | Validate API requests.                                                  |
 | Storage (optional)   | SQLite (`modernc.org/sqlite`) or Postgres (`pgx`)  | History, saved checks, rate-limit buckets. Pure-Go SQLite by default.   |
@@ -52,7 +52,7 @@ The goal: **deploy with one `docker compose up` and have a private whatsmydns in
 ## 3. Folder Structure
 
 ```
-gdns/
+dnsmon/
 ├── CLAUDE.md                       # ← this file
 ├── README.md                       # User-facing readme (install, run, screenshots)
 ├── LICENSE                         # MIT
@@ -67,7 +67,7 @@ gdns/
 │       └── release.yml             # goreleaser on tag
 │
 ├── cmd/
-│   └── gdns/
+│   └── dnsmon/
 │       └── main.go                 # Entrypoint: parses flags/config, wires DI, starts HTTP server.
 │
 ├── internal/                       # All non-public code lives here.
@@ -163,10 +163,10 @@ gdns/
 │
 ├── deploy/
 │   ├── Dockerfile                  # Multi-stage: node→tailwind, go→binary, distroless final.
-│   ├── docker-compose.yml          # gdns + (optional) postgres + redis.
+│   ├── docker-compose.yml          # dnsmon + (optional) postgres + redis.
 │   ├── docker-compose.sqlite.yml   # Minimal SQLite-only stack.
 │   ├── systemd/
-│   │   └── gdns.service
+│   │   └── dnsmon.service
 │   └── k8s/
 │       ├── deployment.yaml
 │       ├── service.yaml
@@ -480,12 +480,12 @@ Headers returned: `X-RateLimit-Limit`, `X-RateLimit-Remaining`, `X-RateLimit-Res
 
 ## 9. Configuration
 
-`config.yaml` (overridable by env vars `GDNS_*`, e.g. `GDNS_SERVER_LISTEN`):
+`config.yaml` (overridable by env vars `DNSMON_*`, e.g. `DNSMON_SERVER_LISTEN`):
 
 ```yaml
 server:
   listen: ":8080"
-  base_url: "https://gdns.example.com"
+  base_url: "https://dnsmon.example.com"
   read_timeout: 10s
   write_timeout: 30s
 
@@ -502,7 +502,7 @@ resolvers:
 
 storage:
   driver: "sqlite"        # sqlite | postgres | none
-  dsn: "file:./gdns.db?cache=shared&_fk=1"
+  dsn: "file:./dnsmon.db?cache=shared&_fk=1"
   retention_days: 30      # auto-purge old saved checks
 
 cache:
@@ -576,10 +576,10 @@ metrics:
 
 ```bash
 # Local dev
-make dev               # runs go run ./cmd/gdns with hot-reload via air
+make dev               # runs go run ./cmd/dnsmon with hot-reload via air
 
 # Build single binary (embedded UI + resolvers)
-make build             # → ./bin/gdns
+make build             # → ./bin/dnsmon
 
 # Test
 make test              # go test ./...
@@ -593,7 +593,7 @@ make ui                # tailwind build → web/dist
 make ui-watch          # tailwind --watch
 
 # Docker
-make docker            # builds deploy/Dockerfile, tags gdns:latest
+make docker            # builds deploy/Dockerfile, tags dnsmon:latest
 
 # Release
 make release           # goreleaser release --clean
@@ -602,7 +602,7 @@ make release           # goreleaser release --clean
 Dockerfile uses three stages:
 1. `node:20-alpine` — builds Tailwind CSS into `web/dist/`.
 2. `golang:1.23-alpine` — `go build -trimpath -ldflags="-s -w -X .../version.Version=..."` with `CGO_ENABLED=0`.
-3. `gcr.io/distroless/static:nonroot` — copy binary; `ENTRYPOINT ["/gdns"]`.
+3. `gcr.io/distroless/static:nonroot` — copy binary; `ENTRYPOINT ["/dnsmon"]`.
 
 ---
 

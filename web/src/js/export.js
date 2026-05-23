@@ -11,7 +11,7 @@ async function exportCheck(checkId, format) {
   const objectUrl = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = objectUrl;
-  a.download = `gdns-check-${checkId}.${format}`;
+  a.download = `dnsmon-check-${checkId}.${format}`;
   a.style.display = 'none';
   document.body.appendChild(a);
   a.click();

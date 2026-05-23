@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/fogleman/gg"
-	"github.com/tomerklein/gdns/internal/dnsclient"
+	"github.com/t0mer/dnsmon/internal/dnsclient"
 )
 
 const (

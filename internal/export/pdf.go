@@ -5,7 +5,7 @@ import (
 	"io"
 
 	"github.com/jung-kurt/gofpdf"
-	"github.com/tomerklein/gdns/internal/dnsclient"
+	"github.com/t0mer/dnsmon/internal/dnsclient"
 )
 
 // PDF writes a Check's results as PDF to w.
@@ -15,7 +15,7 @@ func PDF(w io.Writer, check *dnsclient.Check) error {
 	pdf.SetFont("Helvetica", "B", 16)
 
 	// Title
-	pdf.CellFormat(0, 10, "gdns DNS Propagation Report", "", 1, "C", false, 0, "")
+	pdf.CellFormat(0, 10, "dnsmon DNS Propagation Report", "", 1, "C", false, 0, "")
 	pdf.Ln(4)
 
 	// Metadata

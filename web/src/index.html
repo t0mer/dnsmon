@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>gdns — DNS Propagation Checker</title>
+  <title>dnsmon — DNS Propagation Checker</title>
   <meta name="description" content="Self-hosted DNS propagation checker. Check how DNS is resolving across 100+ global resolvers." />
   <link rel="stylesheet" href="/css/app.css" />
   <!-- Leaflet -->
@@ -24,11 +24,11 @@
       <div class="flex items-center justify-between h-14">
 
         <!-- Logo -->
-        <a href="/" class="flex items-center gap-2 text-indigo-600 dark:text-indigo-400 font-bold text-lg" aria-label="gdns home">
+        <a href="/" class="flex items-center gap-2 text-indigo-600 dark:text-indigo-400 font-bold text-lg" aria-label="dnsmon home">
           <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
             <circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
           </svg>
-          <span>gdns</span>
+          <span>dnsmon</span>
         </a>
 
         <!-- Desktop links -->
@@ -66,7 +66,7 @@
   </nav>
 
   <!-- Main content -->
-  <main x-data="gdnsApp()">
+  <main x-data="dnsmonApp()">
 
     <!-- HERO (gradient bg) -->
     <div class="bg-gradient-to-br from-indigo-600 via-indigo-700 to-violet-800 dark:from-indigo-950 dark:via-slate-950 dark:to-violet-950">
@@ -291,7 +291,11 @@
               <div class="flex items-start justify-between gap-2">
                 <!-- Left: flag + resolver info -->
                 <div class="flex items-center gap-2 min-w-0">
-                  <span class="text-xl flex-shrink-0" x-text="countryFlag(result.resolver.country)" aria-hidden="true"></span>
+                  <span class="relative flex-shrink-0 group cursor-default">
+                    <span class="text-xl" x-text="countryFlag(result.resolver.country)" aria-hidden="true"></span>
+                    <span class="absolute z-10 bottom-full left-1/2 -translate-x-1/2 mb-1.5 px-2 py-1 text-xs rounded-md bg-slate-800 dark:bg-slate-700 text-white whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-150 shadow-lg"
+                      x-text="countryName(result.resolver.country)"></span>
+                  </span>
                   <div class="min-w-0">
                     <div class="font-medium text-slate-900 dark:text-white text-sm truncate" x-text="result.resolver.name"></div>
                     <div class="text-xs text-slate-500 dark:text-slate-400 font-mono" x-text="result.resolver.ip"></div>
@@ -324,8 +328,14 @@
                 </template>
               </div>
               <!-- Location -->
-              <div class="mt-1 ml-9 text-xs text-slate-400 dark:text-slate-500"
-                x-text="[result.resolver.city, result.resolver.country].filter(Boolean).join(', ')"></div>
+              <div class="mt-1 ml-9 text-xs text-slate-400 dark:text-slate-500 flex items-center gap-1">
+                <span class="relative group cursor-default">
+                  <span x-text="countryFlag(result.resolver.country)" aria-hidden="true"></span>
+                  <span class="absolute z-10 bottom-full left-1/2 -translate-x-1/2 mb-1.5 px-2 py-1 text-xs rounded-md bg-slate-800 dark:bg-slate-700 text-white whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-150 shadow-lg"
+                    x-text="countryName(result.resolver.country)"></span>
+                </span>
+                <span x-text="result.resolver.city || ''"></span>
+              </div>
             </div>
           </template>
         </div>
@@ -365,7 +375,11 @@
                 <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors animate-fade-in">
                   <!-- Flag -->
                   <td class="px-4 py-3">
-                    <span class="text-xl" x-text="countryFlag(result.resolver.country)" :title="result.resolver.country" aria-hidden="true"></span>
+                    <span class="relative inline-block group cursor-default">
+                      <span class="text-xl" x-text="countryFlag(result.resolver.country)" aria-hidden="true"></span>
+                      <span class="absolute z-10 bottom-full left-1/2 -translate-x-1/2 mb-1.5 px-2 py-1 text-xs rounded-md bg-slate-800 dark:bg-slate-700 text-white whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-150 shadow-lg"
+                        x-text="countryName(result.resolver.country)"></span>
+                    </span>
                   </td>
                   <!-- Resolver -->
                   <td class="px-4 py-3">
@@ -374,7 +388,7 @@
                   </td>
                   <!-- Location -->
                   <td class="px-4 py-3 text-slate-500 dark:text-slate-400 text-xs">
-                    <span x-text="[result.resolver.city, result.resolver.country].filter(Boolean).join(', ')"></span>
+                    <span x-text="result.resolver.city || '—'"></span>
                   </td>
                   <!-- Status badge -->
                   <td class="px-4 py-3">
@@ -482,12 +496,12 @@
       <div class="flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-slate-400 dark:text-slate-500">
         <div class="flex items-center gap-2">
           <svg class="w-5 h-5 text-indigo-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
-          <span class="font-medium text-slate-600 dark:text-slate-300">gdns</span>
+          <span class="font-medium text-slate-600 dark:text-slate-300">dnsmon</span>
           <span>&#8212; Self-hosted DNS propagation checker</span>
         </div>
         <div class="flex items-center gap-4">
           <a href="/about" class="hover:text-slate-600 dark:hover:text-slate-300 transition-colors">About</a>
-          <a href="https://github.com/tomerklein/gdns" class="hover:text-slate-600 dark:hover:text-slate-300 transition-colors" target="_blank" rel="noopener noreferrer">GitHub</a>
+          <a href="https://github.com/t0mer/dnsmon" class="hover:text-slate-600 dark:hover:text-slate-300 transition-colors" target="_blank" rel="noopener noreferrer">GitHub</a>
           <a href="/api-docs" class="hover:text-slate-600 dark:hover:text-slate-300 transition-colors">API</a>
         </div>
       </div>

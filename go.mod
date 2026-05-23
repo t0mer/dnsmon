@@ -1,4 +1,4 @@
-module github.com/tomerklein/gdns
+module github.com/t0mer/dnsmon
 
 go 1.25.0
 

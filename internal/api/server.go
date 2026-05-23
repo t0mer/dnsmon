@@ -7,13 +7,13 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"github.com/tomerklein/gdns/internal/api/docs"
-	v1 "github.com/tomerklein/gdns/internal/api/v1"
-	"github.com/tomerklein/gdns/internal/checker"
-	"github.com/tomerklein/gdns/internal/config"
-	"github.com/tomerklein/gdns/internal/resolvers"
-	"github.com/tomerklein/gdns/internal/storage"
-	"github.com/tomerklein/gdns/web"
+	"github.com/t0mer/dnsmon/internal/api/docs"
+	v1 "github.com/t0mer/dnsmon/internal/api/v1"
+	"github.com/t0mer/dnsmon/internal/checker"
+	"github.com/t0mer/dnsmon/internal/config"
+	"github.com/t0mer/dnsmon/internal/resolvers"
+	"github.com/t0mer/dnsmon/internal/storage"
+	"github.com/t0mer/dnsmon/web"
 )
 
 // Server holds the HTTP router and its dependencies.

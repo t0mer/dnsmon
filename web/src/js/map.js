@@ -1,5 +1,5 @@
 /**
- * map.js — Leaflet world map helpers for gdns
+ * map.js — Leaflet world map helpers for dnsmon
  * Provides initMap() and updateMarkers() for the propagation and reverse pages.
  */
 
@@ -106,7 +106,7 @@ function updateMarkers(markerLayer, results) {
 
     // Build popup content
     const popupContent = _buildPopup(resolver, status, answers, duration_ms);
-    marker.bindPopup(popupContent, { maxWidth: 260, className: 'gdns-popup' });
+    marker.bindPopup(popupContent, { maxWidth: 260, className: 'dnsmon-popup' });
 
     // Tooltip (shown on hover)
     marker.bindTooltip(

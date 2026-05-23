@@ -1,13 +1,13 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: gdns
+  name: dnsmon
   labels:
-    app: gdns
+    app: dnsmon
 spec:
   type: ClusterIP
   selector:
-    app: gdns
+    app: dnsmon
   ports:
     - name: http
       port: 8080
