@@ -1,6 +1,6 @@
-# Contributing to gdns
+# Contributing to dnsmon
 
-Thank you for your interest in contributing to gdns! This document covers how to set up the development environment, our branching strategy, commit conventions, and the pull request checklist.
+Thank you for your interest in contributing to dnsmon! This document covers how to set up the development environment, our branching strategy, commit conventions, and the pull request checklist.
 
 ---
 
@@ -16,8 +16,8 @@ Thank you for your interest in contributing to gdns! This document covers how to
 ### Clone and build
 
 ```bash
-git clone https://github.com/tomerklein/gdns.git
-cd gdns
+git clone https://github.com/t0mer/dnsmon.git
+cd dnsmon
 
 # Install frontend build deps
 cd web && npm ci && cd ..
@@ -38,9 +38,9 @@ make dev
 ### Running the server locally
 
 ```bash
-./bin/gdns --config config/config.example.yaml
+./bin/dnsmon --config config/config.example.yaml
 # or with env vars:
-GDNS_STORAGE_DRIVER=none GDNS_CACHE_DRIVER=memory ./bin/gdns
+DNSMON_STORAGE_DRIVER=none DNSMON_CACHE_DRIVER=memory ./bin/dnsmon
 ```
 
 Open http://localhost:8080.
@@ -186,7 +186,7 @@ Before adding a new Go dependency:
 ## Reporting Issues
 
 Open a GitHub issue with:
-- gdns version (`./bin/gdns --version`)
+- dnsmon version (`./bin/dnsmon --version`)
 - Steps to reproduce
 - Expected vs. actual behavior
 - Relevant log output (sanitize any sensitive data)

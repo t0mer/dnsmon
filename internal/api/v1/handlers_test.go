@@ -12,12 +12,12 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	v1 "github.com/tomerklein/gdns/internal/api/v1"
-	"github.com/tomerklein/gdns/internal/checker"
-	"github.com/tomerklein/gdns/internal/config"
-	"github.com/tomerklein/gdns/internal/dnsclient"
-	"github.com/tomerklein/gdns/internal/resolvers"
-	"github.com/tomerklein/gdns/internal/storage"
+	v1 "github.com/t0mer/dnsmon/internal/api/v1"
+	"github.com/t0mer/dnsmon/internal/checker"
+	"github.com/t0mer/dnsmon/internal/config"
+	"github.com/t0mer/dnsmon/internal/dnsclient"
+	"github.com/t0mer/dnsmon/internal/resolvers"
+	"github.com/t0mer/dnsmon/internal/storage"
 )
 
 // mockDNSClient is a stub DNS client.

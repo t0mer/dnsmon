@@ -7,9 +7,9 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/tomerklein/gdns/internal/api/apierr"
-	"github.com/tomerklein/gdns/internal/export"
-	"github.com/tomerklein/gdns/internal/storage"
+	"github.com/t0mer/dnsmon/internal/api/apierr"
+	"github.com/t0mer/dnsmon/internal/export"
+	"github.com/t0mer/dnsmon/internal/storage"
 )
 
 // ExportCheck handles GET /api/v1/check/{id}/export?format=json|csv|png|svg|pdf.
@@ -33,7 +33,7 @@ func ExportCheck(store storage.Storage) http.HandlerFunc {
 			return
 		}
 
-		filename := fmt.Sprintf("gdns-%s-%s.%s", check.Name, check.Type, format)
+		filename := fmt.Sprintf("dnsmon-%s-%s.%s", check.Name, check.Type, format)
 
 		switch format {
 		case "json":

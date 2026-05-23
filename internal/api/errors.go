@@ -3,7 +3,7 @@ package api
 import (
 	"net/http"
 
-	"github.com/tomerklein/gdns/internal/api/apierr"
+	"github.com/t0mer/dnsmon/internal/api/apierr"
 )
 
 // Re-export constants for callers that import api directly.

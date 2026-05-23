@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 
-	"github.com/tomerklein/gdns/internal/dnsclient"
+	"github.com/t0mer/dnsmon/internal/dnsclient"
 )
 
 // ErrNotFound is returned when a requested record does not exist.

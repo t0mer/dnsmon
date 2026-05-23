@@ -7,12 +7,12 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/tomerklein/gdns/internal/cache"
-	"github.com/tomerklein/gdns/internal/checker"
-	"github.com/tomerklein/gdns/internal/config"
-	"github.com/tomerklein/gdns/internal/dnsclient"
-	"github.com/tomerklein/gdns/internal/resolvers"
-	"github.com/tomerklein/gdns/internal/storage"
+	"github.com/t0mer/dnsmon/internal/cache"
+	"github.com/t0mer/dnsmon/internal/checker"
+	"github.com/t0mer/dnsmon/internal/config"
+	"github.com/t0mer/dnsmon/internal/dnsclient"
+	"github.com/t0mer/dnsmon/internal/resolvers"
+	"github.com/t0mer/dnsmon/internal/storage"
 )
 
 // mockClient is a fake DNS client for testing.

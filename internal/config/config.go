@@ -85,14 +85,14 @@ type MetricsConfig struct {
 }
 
 // Load reads configuration from cfgFile (if non-empty) or from default search
-// paths, merges environment variables with the GDNS_ prefix, and returns the
+// paths, merges environment variables with the DNSMON_ prefix, and returns the
 // parsed Config.
 func Load(cfgFile string) (*Config, error) {
 	v := viper.New()
 
 	setDefaults(v)
 
-	v.SetEnvPrefix("GDNS")
+	v.SetEnvPrefix("DNSMON")
 	v.AutomaticEnv()
 	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 
@@ -102,8 +102,8 @@ func Load(cfgFile string) (*Config, error) {
 		v.SetConfigName("config")
 		v.SetConfigType("yaml")
 		v.AddConfigPath(".")
-		v.AddConfigPath("$HOME/.gdns")
-		v.AddConfigPath("/etc/gdns")
+		v.AddConfigPath("$HOME/.dnsmon")
+		v.AddConfigPath("/etc/dnsmon")
 	}
 
 	if err := v.ReadInConfig(); err != nil {

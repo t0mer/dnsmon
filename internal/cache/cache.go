@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/tomerklein/gdns/internal/config"
+	"github.com/t0mer/dnsmon/internal/config"
 )
 
 // Cache is a key-value store for DNS query results.

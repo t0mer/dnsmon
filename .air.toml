@@ -3,7 +3,7 @@ tmp_dir = ".tmp"
 
 [build]
 cmd = "make build"
-bin = "./bin/gdns"
+bin = "./bin/dnsmon"
 include_ext = ["go", "html", "css", "js"]
 exclude_dir = ["web/node_modules", ".tmp", "bin"]
 delay = 500

@@ -11,16 +11,16 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/tomerklein/gdns/internal/api"
-	"github.com/tomerklein/gdns/internal/cache"
-	"github.com/tomerklein/gdns/internal/checker"
-	"github.com/tomerklein/gdns/internal/config"
-	"github.com/tomerklein/gdns/internal/dnsclient"
-	"github.com/tomerklein/gdns/internal/resolvers"
-	"github.com/tomerklein/gdns/internal/storage"
-	sqlitestore "github.com/tomerklein/gdns/internal/storage/sqlite"
-	pgstore "github.com/tomerklein/gdns/internal/storage/postgres"
-	"github.com/tomerklein/gdns/internal/version"
+	"github.com/t0mer/dnsmon/internal/api"
+	"github.com/t0mer/dnsmon/internal/cache"
+	"github.com/t0mer/dnsmon/internal/checker"
+	"github.com/t0mer/dnsmon/internal/config"
+	"github.com/t0mer/dnsmon/internal/dnsclient"
+	"github.com/t0mer/dnsmon/internal/resolvers"
+	"github.com/t0mer/dnsmon/internal/storage"
+	sqlitestore "github.com/t0mer/dnsmon/internal/storage/sqlite"
+	pgstore "github.com/t0mer/dnsmon/internal/storage/postgres"
+	"github.com/t0mer/dnsmon/internal/version"
 )
 
 func main() {
@@ -54,7 +54,7 @@ func main() {
 	defer cancel()
 
 	info := version.BuildInfo()
-	log.Info("starting gdns",
+	log.Info("starting dnsmon",
 		slog.String("version", info.Version),
 		slog.String("commit", info.Commit),
 		slog.String("listen", cfg.Server.Listen),

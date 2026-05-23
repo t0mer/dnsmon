@@ -5,8 +5,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/tomerklein/gdns/internal/cache"
-	"github.com/tomerklein/gdns/internal/dnsclient"
+	"github.com/t0mer/dnsmon/internal/cache"
+	"github.com/t0mer/dnsmon/internal/dnsclient"
 )
 
 // StreamRequest describes a streaming DNS propagation check.

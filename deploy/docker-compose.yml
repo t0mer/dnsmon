@@ -1,19 +1,19 @@
 version: "3.9"
 services:
-  gdns:
-    image: ghcr.io/tomerklein/gdns:latest
+  dnsmon:
+    image: ghcr.io/t0mer/dnsmon:latest
     build:
       context: ..
       dockerfile: deploy/Dockerfile
     ports:
       - "8080:8080"
     environment:
-      GDNS_SERVER_LISTEN: ":8080"
-      GDNS_STORAGE_DRIVER: "postgres"
-      GDNS_STORAGE_DSN: "postgres://gdns:gdns@postgres:5432/gdns?sslmode=disable"
-      GDNS_CACHE_DRIVER: "redis"
-      GDNS_CACHE_REDIS_ADDR: "redis:6379"
-      GDNS_LOG_FORMAT: "json"
+      DNSMON_SERVER_LISTEN: ":8080"
+      DNSMON_STORAGE_DRIVER: "postgres"
+      DNSMON_STORAGE_DSN: "postgres://dnsmon:dnsmon@postgres:5432/dnsmon?sslmode=disable"
+      DNSMON_CACHE_DRIVER: "redis"
+      DNSMON_CACHE_REDIS_ADDR: "redis:6379"
+      DNSMON_LOG_FORMAT: "json"
     depends_on:
       postgres:
         condition: service_healthy
@@ -24,13 +24,13 @@ services:
   postgres:
     image: postgres:16-alpine
     environment:
-      POSTGRES_USER: gdns
-      POSTGRES_PASSWORD: gdns
-      POSTGRES_DB: gdns
+      POSTGRES_USER: dnsmon
+      POSTGRES_PASSWORD: dnsmon
+      POSTGRES_DB: dnsmon
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U gdns"]
+      test: ["CMD-SHELL", "pg_isready -U dnsmon"]
       interval: 5s
       timeout: 5s
       retries: 5

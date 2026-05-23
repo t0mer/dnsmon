@@ -1,20 +1,20 @@
 version: "3.9"
 services:
-  gdns:
-    image: ghcr.io/tomerklein/gdns:latest
+  dnsmon:
+    image: ghcr.io/t0mer/dnsmon:latest
     build:
       context: ..
       dockerfile: deploy/Dockerfile
     ports:
       - "8080:8080"
     environment:
-      GDNS_STORAGE_DRIVER: "sqlite"
-      GDNS_STORAGE_DSN: "file:/data/gdns.db?cache=shared&_fk=1"
-      GDNS_CACHE_DRIVER: "memory"
-      GDNS_LOG_FORMAT: "json"
+      DNSMON_STORAGE_DRIVER: "sqlite"
+      DNSMON_STORAGE_DSN: "file:/data/dnsmon.db?cache=shared&_fk=1"
+      DNSMON_CACHE_DRIVER: "memory"
+      DNSMON_LOG_FORMAT: "json"
     volumes:
-      - gdnsdata:/data
+      - dnsmondata:/data
     restart: unless-stopped
 
 volumes:
-  gdnsdata:
+  dnsmondata:

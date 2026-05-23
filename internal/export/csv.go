@@ -6,7 +6,7 @@ import (
 	"io"
 	"strings"
 
-	"github.com/tomerklein/gdns/internal/dnsclient"
+	"github.com/t0mer/dnsmon/internal/dnsclient"
 )
 
 // CSV writes a Check's results as CSV to w.

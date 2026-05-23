@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>gdns — About</title>
-  <meta name="description" content="About gdns — a self-hosted, open-source DNS propagation checker built with Go." />
+  <title>dnsmon — About</title>
+  <meta name="description" content="About dnsmon — a self-hosted, open-source DNS propagation checker built with Go." />
   <link rel="stylesheet" href="/css/app.css" />
 </head>
 <body class="min-h-screen">
@@ -15,11 +15,11 @@
       <div class="flex items-center justify-between h-14">
 
         <!-- Logo -->
-        <a href="/" class="flex items-center gap-2 text-indigo-600 dark:text-indigo-400 font-bold text-lg" aria-label="gdns home">
+        <a href="/" class="flex items-center gap-2 text-indigo-600 dark:text-indigo-400 font-bold text-lg" aria-label="dnsmon home">
           <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
             <circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
           </svg>
-          <span>gdns</span>
+          <span>dnsmon</span>
         </a>
 
         <!-- Desktop links -->
@@ -49,7 +49,7 @@
           <circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
         </svg>
       </div>
-      <h1 class="text-2xl sm:text-3xl font-bold text-white mb-2">About gdns</h1>
+      <h1 class="text-2xl sm:text-3xl font-bold text-white mb-2">About dnsmon</h1>
       <p class="text-indigo-200 dark:text-indigo-300 text-sm sm:text-base max-w-xl mx-auto">
         A free, open-source, self-hosted alternative to <a href="https://www.whatsmydns.net" target="_blank" rel="noopener noreferrer" class="text-white underline underline-offset-2 hover:no-underline">whatsmydns.net</a> — built with Go.
       </p>
@@ -59,11 +59,11 @@
   <!-- Main content -->
   <main class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-5">
 
-    <!-- What is gdns -->
+    <!-- What is dnsmon -->
     <div class="card card-body">
-      <h2 class="text-lg font-semibold text-slate-900 dark:text-white mb-3">What is gdns?</h2>
+      <h2 class="text-lg font-semibold text-slate-900 dark:text-white mb-3">What is dnsmon?</h2>
       <p class="text-slate-600 dark:text-slate-400 leading-relaxed mb-3 text-sm">
-        <strong class="text-slate-900 dark:text-white">gdns</strong> is an open-source DNS propagation checker you can run inside
+        <strong class="text-slate-900 dark:text-white">dnsmon</strong> is an open-source DNS propagation checker you can run inside
         your own infrastructure. It queries 100+ global public DNS resolvers in parallel and shows you how a DNS record is
         resolving around the world — in real time.
       </p>
@@ -139,13 +139,13 @@
     <div class="card card-body">
       <h2 class="text-lg font-semibold text-slate-900 dark:text-white mb-3">Deploy in 30 seconds</h2>
       <p class="text-slate-600 dark:text-slate-400 text-sm mb-4">
-        Run gdns with a single command using Docker Compose:
+        Run dnsmon with a single command using Docker Compose:
       </p>
       <pre class="bg-slate-900 dark:bg-slate-950 text-emerald-400 text-sm font-mono p-4 rounded-xl overflow-x-auto ring-1 ring-slate-800"><code>docker compose -f deploy/docker-compose.sqlite.yml up -d</code></pre>
       <p class="text-sm text-slate-500 dark:text-slate-400 mt-3">
         Then open <strong class="font-mono text-slate-700 dark:text-slate-300">http://localhost:8080</strong> in your browser.
         For production deployments with Postgres and Redis, see the
-        <a href="https://github.com/tomerklein/gdns/blob/main/docs/DEPLOYMENT.md" target="_blank" rel="noopener noreferrer"
+        <a href="https://github.com/t0mer/dnsmon/blob/main/docs/DEPLOYMENT.md" target="_blank" rel="noopener noreferrer"
           class="text-indigo-600 dark:text-indigo-400 hover:underline">deployment guide</a>.
       </p>
     </div>
@@ -193,7 +193,7 @@
     <div class="card card-body">
       <h2 class="text-lg font-semibold text-slate-900 dark:text-white mb-4">Links</h2>
       <div class="flex flex-col sm:flex-row gap-3">
-        <a href="https://github.com/tomerklein/gdns" target="_blank" rel="noopener noreferrer"
+        <a href="https://github.com/t0mer/dnsmon" target="_blank" rel="noopener noreferrer"
           class="btn-primary flex items-center justify-center gap-2">
           <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
             <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/>
@@ -217,12 +217,12 @@
       <div class="flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-slate-400 dark:text-slate-500">
         <div class="flex items-center gap-2">
           <svg class="w-5 h-5 text-indigo-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
-          <span class="font-medium text-slate-600 dark:text-slate-300">gdns</span>
+          <span class="font-medium text-slate-600 dark:text-slate-300">dnsmon</span>
           <span>&#8212; Self-hosted DNS propagation checker. MIT License.</span>
         </div>
         <div class="flex items-center gap-4">
           <a href="/about" class="hover:text-slate-600 dark:hover:text-slate-300 transition-colors">About</a>
-          <a href="https://github.com/tomerklein/gdns" class="hover:text-slate-600 dark:hover:text-slate-300 transition-colors" target="_blank" rel="noopener noreferrer">GitHub</a>
+          <a href="https://github.com/t0mer/dnsmon" class="hover:text-slate-600 dark:hover:text-slate-300 transition-colors" target="_blank" rel="noopener noreferrer">GitHub</a>
           <a href="/api-docs" class="hover:text-slate-600 dark:hover:text-slate-300 transition-colors">API</a>
         </div>
       </div>
