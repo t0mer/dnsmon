@@ -511,19 +511,36 @@ function settingsApp() {
     resolvers: [],
     resolverQuery: '',
 
+    // Session
+    currentUser: '',
+
     async init() {
       await this.loadAll();
+    },
+
+    // unauthorized() returns true (and redirects to /login) if the response is a 401.
+    unauthorized(resp) {
+      if (resp.status === 401) {
+        window.location.href = '/login';
+        return true;
+      }
+      return false;
     },
 
     async loadAll() {
       this.loading = true;
       try {
-        const [s, tk, sc, rs] = await Promise.all([
-          fetch('/api/v1/settings').then((r) => r.json()),
-          fetch('/api/v1/settings/tokens').then((r) => r.json()),
-          fetch('/api/v1/settings/schedules').then((r) => r.json()),
-          fetch('/api/v1/resolvers').then((r) => r.json()),
+        const sess = await fetch('/api/v1/auth/session').then((r) => r.json()).catch(() => ({}));
+        this.currentUser = sess.authenticated ? sess.username : '';
+
+        const responses = await Promise.all([
+          fetch('/api/v1/settings'),
+          fetch('/api/v1/settings/tokens'),
+          fetch('/api/v1/settings/schedules'),
+          fetch('/api/v1/resolvers'),
         ]);
+        if (responses.some((r) => this.unauthorized(r))) return;
+        const [s, tk, sc, rs] = await Promise.all(responses.map((r) => r.json()));
         this.auth = {
           enabled: !!s.auth.enabled,
           username: s.auth.username || '',
@@ -548,6 +565,11 @@ function settingsApp() {
       setTimeout(() => { this.statusMsg = ''; }, 4000);
     },
 
+    async logout() {
+      await fetch('/api/v1/auth/logout', { method: 'POST' }).catch(() => {});
+      window.location.href = '/login';
+    },
+
     // ---- Settings document (auth + notifications + disabled resolvers) ----
     async saveSettings() {
       this.saving = true;
@@ -566,11 +588,17 @@ function settingsApp() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload),
         });
+        if (this.unauthorized(resp)) return;
         if (!resp.ok) {
           const e = await resp.json().catch(() => ({}));
           throw new Error(e?.error?.message || `HTTP ${resp.status}`);
         }
         const s = await resp.json();
+        // Enabling auth starts requiring a session; send the user to log in.
+        if (s.auth.enabled && !this.currentUser) {
+          window.location.href = '/login';
+          return;
+        }
         this.auth = {
           enabled: !!s.auth.enabled,
           username: s.auth.username || '',
@@ -707,6 +735,40 @@ function settingsApp() {
 }
 
 // ---------------------------------------------------------------------------
+// loginApp — Sign-in page (login.html)
+// ---------------------------------------------------------------------------
+function loginApp() {
+  return {
+    username: '',
+    password: '',
+    loading: false,
+    errorMsg: '',
+
+    async login() {
+      if (!this.username.trim()) return;
+      this.loading = true;
+      this.errorMsg = '';
+      try {
+        const resp = await fetch('/api/v1/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username: this.username.trim(), password: this.password }),
+        });
+        if (!resp.ok) {
+          const e = await resp.json().catch(() => ({}));
+          throw new Error(e?.error?.message || `HTTP ${resp.status}`);
+        }
+        window.location.href = '/settings';
+      } catch (e) {
+        this.errorMsg = e.message;
+      } finally {
+        this.loading = false;
+      }
+    },
+  };
+}
+
+// ---------------------------------------------------------------------------
 // Register Alpine.js components
 // ---------------------------------------------------------------------------
 document.addEventListener('alpine:init', () => {
@@ -714,4 +776,5 @@ document.addEventListener('alpine:init', () => {
   Alpine.data('lookupApp', lookupApp);
   Alpine.data('reverseApp', reverseApp);
   Alpine.data('settingsApp', settingsApp);
+  Alpine.data('loginApp', loginApp);
 });

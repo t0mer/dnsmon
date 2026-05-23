@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en" class="">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>dnsmon — Sign in</title>
+  <link rel="stylesheet" href="/css/app.css" />
+</head>
+<body class="min-h-screen flex items-center justify-center px-4" x-data="loginApp()">
+
+  <div class="w-full max-w-sm">
+    <div class="flex items-center justify-center gap-2 text-indigo-600 dark:text-indigo-400 font-bold text-xl mb-6">
+      <svg class="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+        <circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+      </svg>
+      <span>dnsmon</span>
+    </div>
+
+    <form @submit.prevent="login()" class="card card-body space-y-4">
+      <h1 class="text-lg font-semibold text-slate-900 dark:text-white">Sign in</h1>
+
+      <div x-show="errorMsg" class="px-3 py-2 rounded-lg text-sm bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 ring-1 ring-rose-200 dark:ring-rose-900" x-text="errorMsg" role="alert"></div>
+
+      <div>
+        <label for="u" class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Username</label>
+        <input id="u" type="text" x-model="username" class="input" autocomplete="username" autofocus />
+      </div>
+      <div>
+        <label for="p" class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Password</label>
+        <input id="p" type="password" x-model="password" class="input" autocomplete="current-password" />
+      </div>
+
+      <button type="submit" :disabled="loading" class="btn bg-indigo-600 hover:bg-indigo-700 text-white w-full">
+        <span x-text="loading ? 'Signing in…' : 'Sign in'"></span>
+      </button>
+    </form>
+
+    <p class="text-center mt-4 text-xs text-slate-400 dark:text-slate-500">
+      <a href="/" class="hover:text-slate-600 dark:hover:text-slate-300">← Back to dnsmon</a>
+    </p>
+  </div>
+
+  <script defer src="/js/app.js"></script>
+  <script defer src="/vendor/alpine.js"></script>
+</body>
+</html>
