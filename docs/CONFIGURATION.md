@@ -6,6 +6,55 @@ Pass a config file path with `--config /path/to/config.yaml`.
 
 ---
 
+## Command-Line Flags
+
+Flags override the config file and environment for the current run.
+
+| Flag | Description |
+|---|---|
+| `--config` | Path to a YAML config file. |
+| `--listen` | Override the full listen address, e.g. `:8080` or `0.0.0.0:9090`. |
+| `--port` | Override only the port, preserving any host in `server.listen`. Example: `--port 9090`. Takes effect after `--listen` if both are given. |
+| `--log-level` | Override the log level (`debug`, `info`, `warn`, `error`). |
+| `--resolvers-file` | Path to an extra resolvers JSON/YAML file. |
+| `--service` | Manage dnsmon as a system service: `install`, `uninstall`, `start`, `stop`, or `restart`. |
+
+### The `PORT` environment variable
+
+For container platforms (Docker, Cloud Run, Heroku, etc.) the bare `PORT`
+environment variable sets the server port without needing the `DNSMON_` prefix:
+
+```bash
+PORT=9090 dnsmon          # listens on :9090
+```
+
+`PORT` overrides the port in `server.listen` (preserving any host). Precedence,
+lowest to highest: `server.listen` (config / `DNSMON_SERVER_LISTEN`) < `PORT`
+env < `--listen` flag < `--port` flag.
+
+### Running as a system service
+
+`--service` registers dnsmon with the host service manager (Windows Service
+Control Manager, Linux systemd, or macOS launchd):
+
+```bash
+# Install (run with the flags the service should use; paths are made absolute)
+dnsmon --port 8080 --config /etc/dnsmon/config.yaml --service install
+
+# Then control it through the OS, or via dnsmon:
+dnsmon --service start
+dnsmon --service stop
+dnsmon --service uninstall
+```
+
+On Linux this requires root (it writes `/etc/systemd/system/dnsmon.service`);
+on Windows run the command from an elevated prompt. Any `--config`,
+`--resolvers-file`, `--listen`, `--port`, and `--log-level` flags passed
+alongside `--service install` are baked into the service definition so the
+service starts with the same settings.
+
+---
+
 ## server
 
 HTTP server settings.
