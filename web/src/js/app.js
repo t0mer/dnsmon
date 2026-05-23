@@ -19,7 +19,7 @@ window.toggleDark = function toggleDark() {
 };
 
 // ---------------------------------------------------------------------------
-// Country flag helper (emoji flag from ISO-3166 alpha-2)
+// Country flag + name helpers (ISO-3166 alpha-2)
 // ---------------------------------------------------------------------------
 function countryFlag(code) {
   if (!code || code.length !== 2) return '';
@@ -27,6 +27,19 @@ function countryFlag(code) {
     (c) => 0x1f1e6 + c.charCodeAt(0) - 65
   );
   return String.fromCodePoint(...codePoints);
+}
+
+const _regionNames = (typeof Intl !== 'undefined' && Intl.DisplayNames)
+  ? new Intl.DisplayNames(['en'], { type: 'region' })
+  : null;
+
+function countryName(code) {
+  if (!code || code.length !== 2) return code || '';
+  try {
+    return _regionNames ? _regionNames.of(code.toUpperCase()) : code;
+  } catch {
+    return code;
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -341,6 +354,7 @@ function dnsmonApp() {
     // Helpers exposed to templates
     // ---------------------------------------------------------------------------
     countryFlag,
+    countryName,
 
     // ---------------------------------------------------------------------------
     // Internal helpers
@@ -473,6 +487,7 @@ function reverseApp() {
     },
 
     countryFlag,
+    countryName,
   };
 }
 
