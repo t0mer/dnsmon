@@ -1,9 +1,9 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: gdns
+  name: dnsmon
   labels:
-    app: gdns
+    app: dnsmon
   annotations:
     kubernetes.io/ingress.class: "nginx"
     nginx.ingress.kubernetes.io/proxy-read-timeout: "300"
@@ -19,16 +19,16 @@ spec:
   ingressClassName: nginx
   tls:
     - hosts:
-        - gdns.example.com
-      secretName: gdns-tls
+        - dnsmon.example.com
+      secretName: dnsmon-tls
   rules:
-    - host: gdns.example.com
+    - host: dnsmon.example.com
       http:
         paths:
           - path: /
             pathType: Prefix
             backend:
               service:
-                name: gdns
+                name: dnsmon
                 port:
                   name: http

@@ -6,9 +6,9 @@ before:
     - go mod tidy
 
 builds:
-  - id: gdns
-    main: ./cmd/gdns
-    binary: gdns
+  - id: dnsmon
+    main: ./cmd/dnsmon
+    binary: dnsmon
     env:
       - CGO_ENABLED=0
     goos:
@@ -20,9 +20,9 @@ builds:
       - arm64
     ldflags:
       - -s -w
-      - -X github.com/tomerklein/gdns/internal/version.Version={{.Version}}
-      - -X github.com/tomerklein/gdns/internal/version.Commit={{.ShortCommit}}
-      - -X github.com/tomerklein/gdns/internal/version.Date={{.Date}}
+      - -X github.com/t0mer/dnsmon/internal/version.Version={{.Version}}
+      - -X github.com/t0mer/dnsmon/internal/version.Commit={{.ShortCommit}}
+      - -X github.com/t0mer/dnsmon/internal/version.Date={{.Date}}
 
 archives:
   - format: tar.gz
@@ -33,8 +33,8 @@ archives:
 
 dockers:
   - image_templates:
-      - "ghcr.io/tomerklein/gdns:{{ .Tag }}"
-      - "ghcr.io/tomerklein/gdns:latest"
+      - "ghcr.io/t0mer/dnsmon:{{ .Tag }}"
+      - "ghcr.io/t0mer/dnsmon:latest"
     dockerfile: deploy/Dockerfile
     use: buildx
     build_flag_templates:

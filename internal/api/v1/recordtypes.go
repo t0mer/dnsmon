@@ -4,8 +4,8 @@ import (
 	"net/http"
 	"sort"
 
-	"github.com/tomerklein/gdns/internal/api/apierr"
-	"github.com/tomerklein/gdns/internal/dnsclient"
+	"github.com/t0mer/dnsmon/internal/api/apierr"
+	"github.com/t0mer/dnsmon/internal/dnsclient"
 )
 
 type recordTypeInfo struct {

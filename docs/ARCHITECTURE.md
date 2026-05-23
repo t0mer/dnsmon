@@ -1,8 +1,8 @@
-# gdns Architecture
+# dnsmon Architecture
 
 ## Overview
 
-gdns is a self-hosted DNS propagation checker. A single Go binary embeds the frontend (HTML/CSS/JS), the curated resolver list, and serves all traffic. No separate web server, asset CDN, or runtime Node.js required.
+dnsmon is a self-hosted DNS propagation checker. A single Go binary embeds the frontend (HTML/CSS/JS), the curated resolver list, and serves all traffic. No separate web server, asset CDN, or runtime Node.js required.
 
 ---
 
@@ -76,7 +76,7 @@ checker.StreamCheck(ctx, params, resultsCh)
 ## Package Dependency Graph
 
 ```
-cmd/gdns
+cmd/dnsmon
     └── internal/api
             ├── internal/checker
             │       ├── internal/dnsclient
@@ -184,7 +184,7 @@ The frontend is vanilla HTML + Alpine.js + Leaflet.js + Tailwind CSS. No bundler
 
 - `web/src/*.html` — page templates
 - `web/src/css/tailwind.src.css` — Tailwind input, compiled at build time
-- `web/src/js/app.js` — Alpine.js components (`gdnsApp`, `lookupApp`, `reverseApp`)
+- `web/src/js/app.js` — Alpine.js components (`dnsmonApp`, `lookupApp`, `reverseApp`)
 - `web/src/js/map.js` — Leaflet map helpers
 - `web/src/js/export.js` — download helper for export API
 

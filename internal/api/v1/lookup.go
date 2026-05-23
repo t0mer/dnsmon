@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/tomerklein/gdns/internal/api/apierr"
-	"github.com/tomerklein/gdns/internal/checker"
+	"github.com/t0mer/dnsmon/internal/api/apierr"
+	"github.com/t0mer/dnsmon/internal/checker"
 )
 
 // LookupRequest is the request body for POST /api/v1/lookup.

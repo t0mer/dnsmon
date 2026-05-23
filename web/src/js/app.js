@@ -1,4 +1,4 @@
-// app.js — Alpine.js components for gdns
+// app.js — Alpine.js components for dnsmon
 // Loaded as a plain defer script (no ES module) so it runs before Alpine initializes.
 
 // ---------------------------------------------------------------------------
@@ -30,9 +30,9 @@ function countryFlag(code) {
 }
 
 // ---------------------------------------------------------------------------
-// gdnsApp — DNS Propagation Checker (index.html)
+// dnsmonApp — DNS Propagation Checker (index.html)
 // ---------------------------------------------------------------------------
-function gdnsApp() {
+function dnsmonApp() {
   return {
     // Form state
     domain: '',
@@ -480,7 +480,7 @@ function reverseApp() {
 // Register Alpine.js components
 // ---------------------------------------------------------------------------
 document.addEventListener('alpine:init', () => {
-  Alpine.data('gdnsApp', gdnsApp);
+  Alpine.data('dnsmonApp', dnsmonApp);
   Alpine.data('lookupApp', lookupApp);
   Alpine.data('reverseApp', reverseApp);
 });

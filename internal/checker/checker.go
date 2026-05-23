@@ -12,11 +12,11 @@ import (
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/tomerklein/gdns/internal/cache"
-	"github.com/tomerklein/gdns/internal/config"
-	"github.com/tomerklein/gdns/internal/dnsclient"
-	"github.com/tomerklein/gdns/internal/resolvers"
-	"github.com/tomerklein/gdns/internal/storage"
+	"github.com/t0mer/dnsmon/internal/cache"
+	"github.com/t0mer/dnsmon/internal/config"
+	"github.com/t0mer/dnsmon/internal/dnsclient"
+	"github.com/t0mer/dnsmon/internal/resolvers"
+	"github.com/t0mer/dnsmon/internal/storage"
 )
 
 const maxResolvers = 200
@@ -62,24 +62,24 @@ func registerOrGet[C prometheus.Collector](c C) C {
 func newMetrics() *metrics {
 	return &metrics{
 		checkTotal: registerOrGet(prometheus.NewCounterVec(prometheus.CounterOpts{
-			Name: "gdns_check_total",
+			Name: "dnsmon_check_total",
 			Help: "Total DNS propagation checks.",
 		}, []string{"type", "status"})),
 		queryDuration: registerOrGet(prometheus.NewHistogramVec(prometheus.HistogramOpts{
-			Name:    "gdns_resolver_query_duration_seconds",
+			Name:    "dnsmon_resolver_query_duration_seconds",
 			Help:    "DNS query duration in seconds per resolver.",
 			Buckets: prometheus.DefBuckets,
 		}, []string{"resolver_id", "status"})),
 		queryTotal: registerOrGet(prometheus.NewCounterVec(prometheus.CounterOpts{
-			Name: "gdns_resolver_query_total",
+			Name: "dnsmon_resolver_query_total",
 			Help: "Total DNS queries per resolver.",
 		}, []string{"resolver_id", "status"})),
 		cacheHits: registerOrGet(prometheus.NewCounter(prometheus.CounterOpts{
-			Name: "gdns_cache_hits_total",
+			Name: "dnsmon_cache_hits_total",
 			Help: "Total cache hits.",
 		})),
 		cacheMisses: registerOrGet(prometheus.NewCounter(prometheus.CounterOpts{
-			Name: "gdns_cache_misses_total",
+			Name: "dnsmon_cache_misses_total",
 			Help: "Total cache misses.",
 		})),
 	}

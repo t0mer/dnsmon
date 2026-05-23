@@ -5,7 +5,7 @@ import (
 	"io"
 	"strings"
 
-	"github.com/tomerklein/gdns/internal/dnsclient"
+	"github.com/t0mer/dnsmon/internal/dnsclient"
 )
 
 const (
@@ -75,7 +75,7 @@ func SVG(w io.Writer, check *dnsclient.Check) error {
 
 	// Title
 	b.WriteString(fmt.Sprintf(
-		`<text x="10" y="20" fill="#e2e8f0" font-family="sans-serif" font-size="14" font-weight="bold">gdns: %s %s</text>`,
+		`<text x="10" y="20" fill="#e2e8f0" font-family="sans-serif" font-size="14" font-weight="bold">dnsmon: %s %s</text>`,
 		escapeXML(check.Name), escapeXML(check.Type),
 	))
 

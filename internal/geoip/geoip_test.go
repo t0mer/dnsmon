@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/tomerklein/gdns/internal/geoip"
+	"github.com/t0mer/dnsmon/internal/geoip"
 )
 
 func TestOpen_MissingFile(t *testing.T) {

@@ -3,9 +3,9 @@ package v1
 import (
 	"net/http"
 
-	"github.com/tomerklein/gdns/internal/api/apierr"
-	"github.com/tomerklein/gdns/internal/storage"
-	"github.com/tomerklein/gdns/internal/version"
+	"github.com/t0mer/dnsmon/internal/api/apierr"
+	"github.com/t0mer/dnsmon/internal/storage"
+	"github.com/t0mer/dnsmon/internal/version"
 )
 
 // Health returns 200 with {"status":"ok"}.

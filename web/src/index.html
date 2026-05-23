@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>gdns — DNS Propagation Checker</title>
+  <title>dnsmon — DNS Propagation Checker</title>
   <meta name="description" content="Self-hosted DNS propagation checker. Check how DNS is resolving across 100+ global resolvers." />
   <link rel="stylesheet" href="/css/app.css" />
   <!-- Leaflet -->
@@ -24,11 +24,11 @@
       <div class="flex items-center justify-between h-14">
 
         <!-- Logo -->
-        <a href="/" class="flex items-center gap-2 text-indigo-600 dark:text-indigo-400 font-bold text-lg" aria-label="gdns home">
+        <a href="/" class="flex items-center gap-2 text-indigo-600 dark:text-indigo-400 font-bold text-lg" aria-label="dnsmon home">
           <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
             <circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
           </svg>
-          <span>gdns</span>
+          <span>dnsmon</span>
         </a>
 
         <!-- Desktop links -->
@@ -66,7 +66,7 @@
   </nav>
 
   <!-- Main content -->
-  <main x-data="gdnsApp()">
+  <main x-data="dnsmonApp()">
 
     <!-- HERO (gradient bg) -->
     <div class="bg-gradient-to-br from-indigo-600 via-indigo-700 to-violet-800 dark:from-indigo-950 dark:via-slate-950 dark:to-violet-950">
@@ -482,12 +482,12 @@
       <div class="flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-slate-400 dark:text-slate-500">
         <div class="flex items-center gap-2">
           <svg class="w-5 h-5 text-indigo-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
-          <span class="font-medium text-slate-600 dark:text-slate-300">gdns</span>
+          <span class="font-medium text-slate-600 dark:text-slate-300">dnsmon</span>
           <span>&#8212; Self-hosted DNS propagation checker</span>
         </div>
         <div class="flex items-center gap-4">
           <a href="/about" class="hover:text-slate-600 dark:hover:text-slate-300 transition-colors">About</a>
-          <a href="https://github.com/tomerklein/gdns" class="hover:text-slate-600 dark:hover:text-slate-300 transition-colors" target="_blank" rel="noopener noreferrer">GitHub</a>
+          <a href="https://github.com/t0mer/dnsmon" class="hover:text-slate-600 dark:hover:text-slate-300 transition-colors" target="_blank" rel="noopener noreferrer">GitHub</a>
           <a href="/api-docs" class="hover:text-slate-600 dark:hover:text-slate-300 transition-colors">API</a>
         </div>
       </div>
