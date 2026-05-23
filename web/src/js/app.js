@@ -19,16 +19,9 @@ window.toggleDark = function toggleDark() {
 };
 
 // ---------------------------------------------------------------------------
-// Country flag + name helpers (ISO-3166 alpha-2)
+// Country name helper (ISO-3166 alpha-2 → full name). Flags render via the
+// flag-icons CSS classes (fi fi-xx) in the templates, not emoji.
 // ---------------------------------------------------------------------------
-function countryFlag(code) {
-  if (!code || code.length !== 2) return '';
-  const codePoints = [...code.toUpperCase()].map(
-    (c) => 0x1f1e6 + c.charCodeAt(0) - 65
-  );
-  return String.fromCodePoint(...codePoints);
-}
-
 const _regionNames = (typeof Intl !== 'undefined' && Intl.DisplayNames)
   ? new Intl.DisplayNames(['en'], { type: 'region' })
   : null;
@@ -353,7 +346,6 @@ function dnsmonApp() {
     // ---------------------------------------------------------------------------
     // Helpers exposed to templates
     // ---------------------------------------------------------------------------
-    countryFlag,
     countryName,
 
     // ---------------------------------------------------------------------------
@@ -486,7 +478,6 @@ function reverseApp() {
       }
     },
 
-    countryFlag,
     countryName,
   };
 }
