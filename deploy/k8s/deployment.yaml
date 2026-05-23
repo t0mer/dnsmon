@@ -1,18 +1,18 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: gdns
+  name: dnsmon
   labels:
-    app: gdns
+    app: dnsmon
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app: gdns
+      app: dnsmon
   template:
     metadata:
       labels:
-        app: gdns
+        app: dnsmon
       annotations:
         prometheus.io/scrape: "true"
         prometheus.io/path: "/metrics"
@@ -23,23 +23,23 @@ spec:
         runAsUser: 65532
         runAsGroup: 65532
       containers:
-        - name: gdns
-          image: ghcr.io/tomerklein/gdns:latest
+        - name: dnsmon
+          image: ghcr.io/t0mer/dnsmon:latest
           imagePullPolicy: Always
           ports:
             - name: http
               containerPort: 8080
               protocol: TCP
           env:
-            - name: GDNS_SERVER_LISTEN
+            - name: DNSMON_SERVER_LISTEN
               value: ":8080"
-            - name: GDNS_LOG_FORMAT
+            - name: DNSMON_LOG_FORMAT
               value: "json"
-            - name: GDNS_STORAGE_DRIVER
+            - name: DNSMON_STORAGE_DRIVER
               value: "sqlite"
-            - name: GDNS_STORAGE_DSN
-              value: "file:/data/gdns.db?cache=shared&_fk=1"
-            - name: GDNS_CACHE_DRIVER
+            - name: DNSMON_STORAGE_DSN
+              value: "file:/data/dnsmon.db?cache=shared&_fk=1"
+            - name: DNSMON_CACHE_DRIVER
               value: "memory"
           resources:
             requests:

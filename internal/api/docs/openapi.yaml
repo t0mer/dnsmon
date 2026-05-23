@@ -1,6 +1,6 @@
 openapi: 3.1.0
 info:
-  title: gdns API
+  title: dnsmon API
   description: Self-hosted DNS propagation checker API
   version: 1.0.0
   license:

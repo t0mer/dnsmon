@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/miekg/dns"
-	"github.com/tomerklein/gdns/internal/config"
+	"github.com/t0mer/dnsmon/internal/config"
 )
 
 // Client performs DNS queries.

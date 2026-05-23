@@ -6,9 +6,9 @@ import (
 	"strconv"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/tomerklein/gdns/internal/api/apierr"
-	"github.com/tomerklein/gdns/internal/dnsclient"
-	"github.com/tomerklein/gdns/internal/storage"
+	"github.com/t0mer/dnsmon/internal/api/apierr"
+	"github.com/t0mer/dnsmon/internal/dnsclient"
+	"github.com/t0mer/dnsmon/internal/storage"
 )
 
 // ListHistory handles GET /api/v1/history.

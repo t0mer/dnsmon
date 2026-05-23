@@ -1,4 +1,4 @@
-// app.js — Alpine.js components for gdns
+// app.js — Alpine.js components for dnsmon
 // Loaded as a plain defer script (no ES module) so it runs before Alpine initializes.
 
 // ---------------------------------------------------------------------------
@@ -19,7 +19,7 @@ window.toggleDark = function toggleDark() {
 };
 
 // ---------------------------------------------------------------------------
-// Country flag helper (emoji flag from ISO-3166 alpha-2)
+// Country flag + name helpers (ISO-3166 alpha-2)
 // ---------------------------------------------------------------------------
 function countryFlag(code) {
   if (!code || code.length !== 2) return '';
@@ -29,10 +29,23 @@ function countryFlag(code) {
   return String.fromCodePoint(...codePoints);
 }
 
+const _regionNames = (typeof Intl !== 'undefined' && Intl.DisplayNames)
+  ? new Intl.DisplayNames(['en'], { type: 'region' })
+  : null;
+
+function countryName(code) {
+  if (!code || code.length !== 2) return code || '';
+  try {
+    return _regionNames ? _regionNames.of(code.toUpperCase()) : code;
+  } catch {
+    return code;
+  }
+}
+
 // ---------------------------------------------------------------------------
-// gdnsApp — DNS Propagation Checker (index.html)
+// dnsmonApp — DNS Propagation Checker (index.html)
 // ---------------------------------------------------------------------------
-function gdnsApp() {
+function dnsmonApp() {
   return {
     // Form state
     domain: '',
@@ -341,6 +354,7 @@ function gdnsApp() {
     // Helpers exposed to templates
     // ---------------------------------------------------------------------------
     countryFlag,
+    countryName,
 
     // ---------------------------------------------------------------------------
     // Internal helpers
@@ -473,6 +487,7 @@ function reverseApp() {
     },
 
     countryFlag,
+    countryName,
   };
 }
 
@@ -480,7 +495,7 @@ function reverseApp() {
 // Register Alpine.js components
 // ---------------------------------------------------------------------------
 document.addEventListener('alpine:init', () => {
-  Alpine.data('gdnsApp', gdnsApp);
+  Alpine.data('dnsmonApp', dnsmonApp);
   Alpine.data('lookupApp', lookupApp);
   Alpine.data('reverseApp', reverseApp);
 });

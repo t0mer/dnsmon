@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# test-integration.sh — Smoke tests the gdns HTTP API against a locally running server.
+# test-integration.sh — Smoke tests the dnsmon HTTP API against a locally running server.
 # Starts the binary with SQLite in a temp dir, runs a basic propagation check,
 # and verifies the response shape.
 #
@@ -11,7 +11,7 @@ set -euo pipefail
 ###############################################################################
 # Configuration
 ###############################################################################
-BINARY="${BINARY:-./bin/gdns}"
+BINARY="${BINARY:-./bin/dnsmon}"
 PORT="${PORT:-18080}"
 BASE_URL="http://localhost:${PORT}"
 TMPDIR=$(mktemp -d)
@@ -48,14 +48,14 @@ trap cleanup EXIT
 ###############################################################################
 # Start server
 ###############################################################################
-echo "Starting gdns on port $PORT with SQLite in $TMPDIR ..."
-GDNS_SERVER_LISTEN=":${PORT}" \
-GDNS_STORAGE_DRIVER="sqlite" \
-GDNS_STORAGE_DSN="file:${TMPDIR}/gdns.db?cache=shared&_fk=1" \
-GDNS_CACHE_DRIVER="memory" \
-GDNS_LOG_FORMAT="text" \
-GDNS_LOG_LEVEL="warn" \
-GDNS_METRICS_ENABLED="false" \
+echo "Starting dnsmon on port $PORT with SQLite in $TMPDIR ..."
+DNSMON_SERVER_LISTEN=":${PORT}" \
+DNSMON_STORAGE_DRIVER="sqlite" \
+DNSMON_STORAGE_DSN="file:${TMPDIR}/dnsmon.db?cache=shared&_fk=1" \
+DNSMON_CACHE_DRIVER="memory" \
+DNSMON_LOG_FORMAT="text" \
+DNSMON_LOG_LEVEL="warn" \
+DNSMON_METRICS_ENABLED="false" \
   "$BINARY" &
 SERVER_PID=$!
 

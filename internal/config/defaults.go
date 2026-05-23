@@ -15,7 +15,7 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("resolvers.builtin", true)
 
 	v.SetDefault("storage.driver", "sqlite")
-	v.SetDefault("storage.dsn", "file:./gdns.db?cache=shared&_fk=1")
+	v.SetDefault("storage.dsn", "file:./dnsmon.db?cache=shared&_fk=1")
 	v.SetDefault("storage.retention_days", 30)
 
 	v.SetDefault("cache.driver", "memory")

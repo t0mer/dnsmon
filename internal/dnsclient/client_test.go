@@ -9,8 +9,8 @@ import (
 	"github.com/miekg/dns"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/tomerklein/gdns/internal/config"
-	"github.com/tomerklein/gdns/internal/dnsclient"
+	"github.com/t0mer/dnsmon/internal/config"
+	"github.com/t0mer/dnsmon/internal/dnsclient"
 )
 
 func newTestConfig(timeout time.Duration) *config.Config {
