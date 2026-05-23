@@ -8,6 +8,9 @@ services:
     ports:
       - "8080:8080"
     environment:
+      # PORT sets the server listen port (Docker/PaaS convention). Equivalent
+      # to DNSMON_SERVER_LISTEN=":8080" but simpler for container platforms.
+      PORT: "8080"
       DNSMON_STORAGE_DRIVER: "sqlite"
       DNSMON_STORAGE_DSN: "file:/data/dnsmon.db?cache=shared&_fk=1"
       DNSMON_CACHE_DRIVER: "memory"
