@@ -5,12 +5,15 @@ import (
 	"flag"
 	"fmt"
 	"log/slog"
+	"net"
 	"net/http"
 	"os"
-	"os/signal"
-	"syscall"
+	"path/filepath"
+	"strconv"
+	"strings"
 	"time"
 
+	"github.com/kardianos/service"
 	"github.com/t0mer/dnsmon/internal/api"
 	"github.com/t0mer/dnsmon/internal/cache"
 	"github.com/t0mer/dnsmon/internal/checker"
@@ -18,8 +21,8 @@ import (
 	"github.com/t0mer/dnsmon/internal/dnsclient"
 	"github.com/t0mer/dnsmon/internal/resolvers"
 	"github.com/t0mer/dnsmon/internal/storage"
-	sqlitestore "github.com/t0mer/dnsmon/internal/storage/sqlite"
 	pgstore "github.com/t0mer/dnsmon/internal/storage/postgres"
+	sqlitestore "github.com/t0mer/dnsmon/internal/storage/sqlite"
 	"github.com/t0mer/dnsmon/internal/version"
 )
 
@@ -28,7 +31,9 @@ func main() {
 		cfgFile       = flag.String("config", "", "path to config file")
 		resolversFile = flag.String("resolvers-file", "", "path to extra resolvers JSON file")
 		listen        = flag.String("listen", "", "override listen address (e.g. :8080)")
+		port          = flag.Int("port", 0, "override server port (e.g. 8080)")
 		logLevel      = flag.String("log-level", "", "override log level (debug|info|warn|error)")
+		serviceAction = flag.String("service", "", "manage the system service: install|uninstall|start|stop|restart")
 	)
 	flag.Parse()
 
@@ -41,6 +46,9 @@ func main() {
 	if *listen != "" {
 		cfg.Server.Listen = *listen
 	}
+	if *port != 0 {
+		cfg.Server.Listen = applyPortOverride(cfg.Server.Listen, *port)
+	}
 	if *logLevel != "" {
 		cfg.Log.Level = *logLevel
 	}
@@ -50,8 +58,31 @@ func main() {
 
 	log := newLogger(cfg)
 
-	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
-	defer cancel()
+	prog := &program{cfg: cfg, log: log}
+
+	svcConfig := &service.Config{
+		Name:        "dnsmon",
+		DisplayName: "dnsmon — DNS Propagation Checker",
+		Description: "Self-hosted DNS propagation checker (whatsmydns.net alternative).",
+		Arguments:   serviceArguments(*cfgFile, *resolversFile, *listen, *port, *logLevel),
+	}
+
+	svc, err := service.New(prog, svcConfig)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "failed to create service: %v\n", err)
+		os.Exit(1)
+	}
+
+	// Service management actions exit after running; they never start the server.
+	if *serviceAction != "" {
+		if err := service.Control(svc, *serviceAction); err != nil {
+			fmt.Fprintf(os.Stderr, "service %s failed: %v\nvalid actions: %s\n",
+				*serviceAction, err, strings.Join(service.ControlAction[:], ", "))
+			os.Exit(1)
+		}
+		fmt.Printf("service %q: %s ok\n", svcConfig.Name, *serviceAction)
+		return
+	}
 
 	info := version.BuildInfo()
 	log.Info("starting dnsmon",
@@ -60,69 +91,144 @@ func main() {
 		slog.String("listen", cfg.Server.Listen),
 	)
 
-	store, err := newStorage(ctx, cfg, log)
-	if err != nil {
-		log.Error("failed to initialise storage", slog.Any("error", err))
+	// Run blocks until the service is stopped (SIGINT/SIGTERM when interactive,
+	// or a stop request from the OS service manager), then calls Stop.
+	if err := svc.Run(); err != nil {
+		log.Error("service run error", slog.Any("error", err))
 		os.Exit(1)
 	}
-	defer store.Close()
+}
 
-	cacheStore, err := cache.New(cfg)
+// program implements service.Interface, wiring the HTTP server lifecycle to the
+// service manager (or to an interactive run).
+type program struct {
+	cfg *config.Config
+	log *slog.Logger
+
+	httpServer *http.Server
+	store      storage.Storage
+	cacheStore cache.Cache
+}
+
+// Start initialises dependencies and launches the HTTP server. It must not block.
+func (p *program) Start(service.Service) error {
+	ctx := context.Background()
+
+	store, err := newStorage(ctx, p.cfg, p.log)
 	if err != nil {
-		log.Error("failed to initialise cache", slog.Any("error", err))
-		os.Exit(1)
+		return fmt.Errorf("initialising storage: %w", err)
 	}
-	defer cacheStore.Close()
+	p.store = store
+
+	cacheStore, err := cache.New(p.cfg)
+	if err != nil {
+		return fmt.Errorf("initialising cache: %w", err)
+	}
+	p.cacheStore = cacheStore
 
 	builtin, err := resolvers.LoadBuiltin()
 	if err != nil {
-		log.Warn("failed to load builtin resolvers, continuing with empty list", slog.Any("error", err))
+		p.log.Warn("failed to load builtin resolvers, continuing with empty list", slog.Any("error", err))
 		builtin = nil
 	}
 
 	registry := resolvers.NewRegistry()
-	if err := registry.Reload(ctx, cfg, builtin); err != nil {
-		log.Error("failed to load resolvers", slog.Any("error", err))
-		os.Exit(1)
+	if err := registry.Reload(ctx, p.cfg, builtin); err != nil {
+		return fmt.Errorf("loading resolvers: %w", err)
 	}
-	log.Info("resolvers loaded", slog.Int("count", len(registry.All())))
+	p.log.Info("resolvers loaded", slog.Int("count", len(registry.All())))
 
-	dnsClient := dnsclient.New(cfg)
-	chkr := checker.New(dnsClient, registry, cacheStore, store, cfg)
+	dnsClient := dnsclient.New(p.cfg)
+	chkr := checker.New(dnsClient, registry, cacheStore, store, p.cfg)
+	srv := api.NewServer(chkr, registry, store, p.cfg, p.log)
 
-	srv := api.NewServer(chkr, registry, store, cfg, log)
-
-	httpServer := &http.Server{
-		Addr:         cfg.Server.Listen,
+	p.httpServer = &http.Server{
+		Addr:         p.cfg.Server.Listen,
 		Handler:      srv.Handler(),
-		ReadTimeout:  cfg.Server.ReadTimeout,
-		WriteTimeout: cfg.Server.WriteTimeout,
+		ReadTimeout:  p.cfg.Server.ReadTimeout,
+		WriteTimeout: p.cfg.Server.WriteTimeout,
 	}
 
-	serverErr := make(chan error, 1)
-	go func() {
-		log.Info("http server listening", slog.String("addr", cfg.Server.Listen))
-		serverErr <- httpServer.ListenAndServe()
-	}()
+	go p.run()
+	return nil
+}
 
-	select {
-	case <-ctx.Done():
-		log.Info("shutting down")
-	case err := <-serverErr:
-		if err != nil && err != http.ErrServerClosed {
-			log.Error("server error", slog.Any("error", err))
+func (p *program) run() {
+	p.log.Info("http server listening", slog.String("addr", p.cfg.Server.Listen))
+	if err := p.httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		p.log.Error("server error", slog.Any("error", err))
+		// When running interactively a fatal bind error should fail the process;
+		// under a service manager the manager decides on restart policy.
+		if service.Interactive() {
 			os.Exit(1)
 		}
 	}
+}
 
-	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer shutdownCancel()
+// Stop gracefully shuts down the HTTP server and releases resources.
+func (p *program) Stop(service.Service) error {
+	p.log.Info("shutting down")
 
-	if err := httpServer.Shutdown(shutdownCtx); err != nil {
-		log.Error("shutdown error", slog.Any("error", err))
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	if p.httpServer != nil {
+		if err := p.httpServer.Shutdown(shutdownCtx); err != nil {
+			p.log.Error("shutdown error", slog.Any("error", err))
+		}
+	}
+	if p.store != nil {
+		p.store.Close()
+	}
+	if p.cacheStore != nil {
+		p.cacheStore.Close()
 	}
 
-	log.Info("shutdown complete")
+	p.log.Info("shutdown complete")
+	return nil
+}
+
+// serviceArguments reconstructs the flags the installed service should run with.
+// File paths are made absolute because the service runs from a different working
+// directory than the install command.
+func serviceArguments(cfgFile, resolversFile, listen string, port int, logLevel string) []string {
+	var args []string
+	if cfgFile != "" {
+		args = append(args, "--config", absOrSelf(cfgFile))
+	}
+	if resolversFile != "" {
+		args = append(args, "--resolvers-file", absOrSelf(resolversFile))
+	}
+	if listen != "" {
+		args = append(args, "--listen", listen)
+	}
+	if port != 0 {
+		args = append(args, "--port", strconv.Itoa(port))
+	}
+	if logLevel != "" {
+		args = append(args, "--log-level", logLevel)
+	}
+	return args
+}
+
+func absOrSelf(path string) string {
+	if abs, err := filepath.Abs(path); err == nil {
+		return abs
+	}
+	return path
+}
+
+// applyPortOverride returns listen with its port replaced by port, preserving any
+// host portion. A non-positive port leaves listen unchanged.
+func applyPortOverride(listen string, port int) string {
+	if port <= 0 {
+		return listen
+	}
+	host := ""
+	if h, _, err := net.SplitHostPort(listen); err == nil {
+		host = h
+	}
+	return net.JoinHostPort(host, strconv.Itoa(port))
 }
 
 func newLogger(cfg *config.Config) *slog.Logger {
