@@ -6,6 +6,10 @@ import (
 	"log/slog"
 	"net/http"
 	"time"
+
+	"github.com/t0mer/dnsmon/internal/api/apierr"
+	"github.com/t0mer/dnsmon/internal/settings"
+	"github.com/t0mer/dnsmon/internal/storage"
 )
 
 type contextKey string
@@ -68,6 +72,46 @@ func Recovery(log *slog.Logger) func(http.Handler) http.Handler {
 					_, _ = w.Write([]byte(`{"error":{"code":"INTERNAL_ERROR","message":"Internal server error."}}`))
 				}
 			}()
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+
+// RequireAuth gates access when UI authentication is enabled in settings. When
+// disabled, requests pass through untouched. When enabled, a valid session
+// cookie is required; unauthenticated API requests get 401 (apiMode=true) while
+// unauthenticated page requests are redirected to /login (apiMode=false).
+func RequireAuth(store storage.Storage, apiMode bool) func(http.Handler) http.Handler {
+	deny := func(w http.ResponseWriter, r *http.Request) {
+		if apiMode {
+			apierr.WriteError(w, r, http.StatusUnauthorized, "UNAUTHORIZED", "Authentication required.", nil)
+			return
+		}
+		http.Redirect(w, r, "/login", http.StatusFound)
+	}
+
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			s, err := store.GetSettings(r.Context())
+			if err != nil {
+				deny(w, r)
+				return
+			}
+			if !s.Auth.Enabled {
+				next.ServeHTTP(w, r)
+				return
+			}
+
+			c, err := r.Cookie(settings.SessionCookie)
+			if err != nil {
+				deny(w, r)
+				return
+			}
+			name, ok := settings.ParseSession(s.SessionSecret, c.Value)
+			if !ok || name != s.Auth.Username {
+				deny(w, r)
+				return
+			}
 			next.ServeHTTP(w, r)
 		})
 	}
