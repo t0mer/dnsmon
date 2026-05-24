@@ -40,7 +40,7 @@ func (c *Checker) Stream(ctx context.Context, req StreamRequest) (<-chan *dnscli
 			return
 		}
 
-		resolverList, err := c.buildResolverList(checkReq)
+		resolverList, err := c.buildResolverList(ctx, checkReq)
 		if err != nil {
 			return
 		}
