@@ -94,13 +94,10 @@ func (s *Server) routes() {
 		r.URL.Path = "/login.html"
 		fileServer.ServeHTTP(w, r)
 	})
-	r.Get("/api-docs", func(w http.ResponseWriter, r *http.Request) {
-		r.URL.Path = "/api-docs.html"
-		fileServer.ServeHTTP(w, r)
-	})
 
-	// API docs
-	r.Mount("/api/docs", docs.Handler())
+	// API docs — Swagger UI and the raw spec.
+	r.Get("/api/docs", docs.SwaggerUI)
+	r.Get("/api/docs/openapi.yaml", docs.Spec)
 
 	// API v1
 	r.Route("/api/v1", func(r chi.Router) {

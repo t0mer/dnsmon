@@ -38,19 +38,14 @@ type swaggerData struct {
 	SpecURL string
 }
 
-// Handler returns an http.Handler serving Swagger UI at / and the raw spec at /openapi.yaml.
-func Handler() http.Handler {
-	mux := http.NewServeMux()
+// SwaggerUI serves the Swagger UI page (wired at GET /api/docs).
+func SwaggerUI(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	_ = swaggerTmpl.Execute(w, swaggerData{SpecURL: "/api/docs/openapi.yaml"})
+}
 
-	mux.HandleFunc("/openapi.yaml", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/yaml")
-		_, _ = w.Write(OpenAPISpec)
-	})
-
-	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		_ = swaggerTmpl.Execute(w, swaggerData{SpecURL: "/api/docs/openapi.yaml"})
-	})
-
-	return mux
+// Spec serves the raw OpenAPI YAML (wired at GET /api/docs/openapi.yaml).
+func Spec(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/yaml")
+	_, _ = w.Write(OpenAPISpec)
 }
