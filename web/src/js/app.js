@@ -173,13 +173,41 @@ function dnsmonApp() {
 
     share() {
       if (!this.checkId) return;
+      // Build the link from the address the browser is on, so it works behind a
+      // reverse proxy / on any host (not just localhost).
       const url = `${window.location.origin}/check/${this.checkId}`;
-      navigator.clipboard.writeText(url).then(() => {
+      this._copyLink(url);
+    },
+
+    _copyLink(text) {
+      const copied = () => {
         this.shareLabel = 'Copied!';
         setTimeout(() => { this.shareLabel = 'Share'; }, 2000);
-      }).catch(() => {
-        window.prompt('Copy this link:', url);
-      });
+      };
+      // The async Clipboard API only exists in a secure context (HTTPS or
+      // localhost); on plain-HTTP hosts it's undefined, so guard and fall back.
+      if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(text).then(copied).catch(() => this._fallbackCopy(text, copied));
+      } else {
+        this._fallbackCopy(text, copied);
+      }
+    },
+
+    _fallbackCopy(text, copied) {
+      try {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.setAttribute('readonly', '');
+        ta.style.position = 'fixed';
+        ta.style.top = '-1000px';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        const ok = document.execCommand('copy');
+        document.body.removeChild(ta);
+        if (ok) { copied(); return; }
+      } catch (_) { /* fall through to prompt */ }
+      window.prompt('Copy this link:', text);
     },
 
     // ---------------------------------------------------------------------------
