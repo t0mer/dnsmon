@@ -52,15 +52,9 @@ function dnsmonApp() {
     checkId: '',
     shareLabel: 'Share',
 
-    // Live / WebSocket
-    liveActive: false,
-    _ws: null,
-
     // Progress
     progressPct: 0,
     progressLabel: 'Querying resolvers...',
-    _totalResolvers: 0,
-    _receivedCount: 0,
 
     // Sorting
     sortBy: 'country',
@@ -139,81 +133,6 @@ function dnsmonApp() {
       }
     },
 
-    // ---------------------------------------------------------------------------
-    // Live check (WebSocket)
-    // ---------------------------------------------------------------------------
-    toggleLive() {
-      if (this.liveActive) {
-        this._stopLive();
-      } else {
-        this._startLive();
-      }
-    },
-
-    _startLive() {
-      if (!this.domain.trim()) return;
-      this._resetResults();
-      this.liveActive = true;
-      this.loading = true;
-      this.errorMsg = '';
-
-      const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      const wsUrl = `${proto}//${window.location.host}/api/v1/check/stream`;
-      this._ws = new WebSocket(wsUrl);
-
-      this._ws.onopen = () => {
-        this._ws.send(JSON.stringify({ name: this.domain.trim(), type: this.type }));
-      };
-
-      this._ws.onmessage = (event) => {
-        let msg;
-        try { msg = JSON.parse(event.data); } catch { return; }
-
-        if (msg.type === 'result' && msg.data) {
-          this.results.push(msg.data);
-          this._receivedCount++;
-          if (this._totalResolvers > 0) {
-            this.progressPct = Math.round((this._receivedCount / this._totalResolvers) * 100);
-          }
-          if (this._markerLayer) {
-            window.updateMarkers(this._markerLayer, this.results);
-          }
-        } else if (msg.type === 'total' && msg.data) {
-          this._totalResolvers = msg.data.total || 0;
-          this.progressLabel = `Querying ${this._totalResolvers} resolvers...`;
-        } else if (msg.type === 'done' && msg.data) {
-          this.summary = msg.data.summary || null;
-          this.checkId = msg.data.id || '';
-          this.progressPct = 100;
-          this.loading = false;
-          this.liveActive = false;
-          this._ws = null;
-        } else if (msg.type === 'error') {
-          this.errorMsg = msg.data?.message || 'Stream error';
-          this._stopLive();
-        }
-      };
-
-      this._ws.onerror = () => {
-        this.errorMsg = 'WebSocket connection failed.';
-        this._stopLive();
-      };
-
-      this._ws.onclose = () => {
-        this.loading = false;
-        this.liveActive = false;
-        this._ws = null;
-      };
-    },
-
-    _stopLive() {
-      if (this._ws) {
-        this._ws.close();
-        this._ws = null;
-      }
-      this.liveActive = false;
-      this.loading = false;
-    },
 
     // ---------------------------------------------------------------------------
     // Permalink
@@ -381,8 +300,6 @@ function dnsmonApp() {
       this.checkId = '';
       this.progressPct = 0;
       this.progressLabel = 'Querying resolvers...';
-      this._receivedCount = 0;
-      this._totalResolvers = 0;
       this.shareLabel = 'Share';
       this.page = 1;
       if (this._markerLayer) {

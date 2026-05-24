@@ -128,23 +128,10 @@
             <div class="flex flex-wrap items-center gap-2">
               <button type="submit"
                 class="btn bg-white hover:bg-indigo-50 text-indigo-700 font-semibold shadow-md flex-shrink-0"
-                :disabled="loading || liveActive"
+                :disabled="loading"
                 aria-label="Run DNS propagation check">
-                <svg class="w-4 h-4" :class="{ 'animate-spin': loading && !liveActive }" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
-                <span x-text="loading && !liveActive ? 'Checking…' : 'Check'"></span>
-              </button>
-
-              <button type="button" @click="toggleLive()"
-                class="btn ring-1 ring-white/30 font-medium flex-shrink-0"
-                :class="liveActive
-                  ? 'bg-rose-500/20 hover:bg-rose-500/30 text-rose-200 ring-rose-400/30'
-                  : 'bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-100 ring-emerald-400/30'"
-                aria-label="Toggle live streaming">
-                <span class="relative flex h-2 w-2 flex-shrink-0">
-                  <span x-show="liveActive" class="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75" aria-hidden="true"></span>
-                  <span class="relative inline-flex rounded-full h-2 w-2" :class="liveActive ? 'bg-rose-400' : 'bg-emerald-400'" aria-hidden="true"></span>
-                </span>
-                <span x-text="liveActive ? 'Stop Live' : 'Live'"></span>
+                <svg class="w-4 h-4" :class="{ 'animate-spin': loading }" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+                <span x-text="loading ? 'Checking…' : 'Check'"></span>
               </button>
 
               <button type="button" x-show="checkId" @click="share()"
@@ -165,7 +152,7 @@
                 <div x-show="exportOpen" @click.outside="exportOpen = false" x-transition
                   class="absolute right-0 top-full mt-1.5 w-36 card py-1 z-20 shadow-xl"
                   role="menu">
-                  <template x-for="fmt in ['json','csv','png','svg','pdf']" :key="fmt">
+                  <template x-for="fmt in ['json','csv','pdf']" :key="fmt">
                     <button type="button"
                       @click="exportResults(fmt); exportOpen = false"
                       class="w-full text-left px-3 py-1.5 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 font-mono uppercase text-xs"
