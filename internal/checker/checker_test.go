@@ -12,8 +12,21 @@ import (
 	"github.com/t0mer/dnsmon/internal/config"
 	"github.com/t0mer/dnsmon/internal/dnsclient"
 	"github.com/t0mer/dnsmon/internal/resolvers"
+	"github.com/t0mer/dnsmon/internal/settings"
 	"github.com/t0mer/dnsmon/internal/storage"
 )
+
+// fakeSettingsStore is a Noop store that reports a fixed disabled-resolver set.
+type fakeSettingsStore struct {
+	storage.Noop
+	disabled []string
+}
+
+func (f *fakeSettingsStore) GetSettings(_ context.Context) (*settings.Settings, error) {
+	s := settings.Default()
+	s.DisabledResolvers = f.disabled
+	return s, nil
+}
 
 // mockClient is a fake DNS client for testing.
 type mockClient struct {
@@ -80,6 +93,34 @@ func TestCheck_Success(t *testing.T) {
 	assert.Equal(t, 2, check.Summary.TotalResolvers)
 	assert.Equal(t, 2, check.Summary.Responded)
 	assert.NotEmpty(t, check.ID)
+}
+
+func TestCheck_ExcludesDisabledResolvers(t *testing.T) {
+	res1 := dnsclient.Resolver{ID: "r1", Name: "R1", IP: "1.1.1.1", Port: 53}
+	res2 := dnsclient.Resolver{ID: "r2", Name: "R2", IP: "8.8.8.8", Port: 53}
+
+	client := &mockClient{}
+	reg := testRegistry([]dnsclient.Resolver{res1, res2})
+	store := &fakeSettingsStore{disabled: []string{"r2"}}
+	c := checker.New(client, reg, &mockCache{}, store, testConfig())
+
+	check, err := c.Check(context.Background(), checker.CheckRequest{Name: "example.com", Type: "A"})
+	require.NoError(t, err)
+
+	assert.Len(t, check.Results, 1)
+	assert.Equal(t, 1, check.Summary.TotalResolvers)
+	assert.Equal(t, "r1", check.Results[0].Resolver.ID)
+}
+
+func TestLookup_DisabledResolverRejected(t *testing.T) {
+	res1 := dnsclient.Resolver{ID: "r1", Name: "R1", IP: "1.1.1.1", Port: 53}
+	client := &mockClient{}
+	reg := testRegistry([]dnsclient.Resolver{res1})
+	store := &fakeSettingsStore{disabled: []string{"r1"}}
+	c := checker.New(client, reg, &mockCache{}, store, testConfig())
+
+	_, err := c.Lookup(context.Background(), checker.LookupRequest{Name: "example.com", Type: "A", Resolver: "r1"})
+	assert.Error(t, err)
 }
 
 func TestCheck_OneTimeout(t *testing.T) {
