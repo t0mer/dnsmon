@@ -87,48 +87,85 @@
 
       <!-- ============ NOTIFICATIONS ============ -->
       <section x-show="activeTab === 'notifications'" class="space-y-4">
-        <div class="flex flex-wrap items-center gap-2">
-          <span class="text-sm text-slate-500 dark:text-slate-400 mr-1">Add channel:</span>
-          <template x-for="t in ['shoutrrr','greenapi','gowa']" :key="t">
-            <button @click="addChannel(t)" class="btn-sm ring-1 ring-slate-200 dark:ring-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800" x-text="channelTypeLabel(t)"></button>
-          </template>
+        <div class="flex items-center justify-between">
+          <h2 class="font-semibold text-slate-900 dark:text-white text-sm">Notification channels</h2>
+          <button @click="openAdd()" x-show="!showEditor" class="btn bg-indigo-600 hover:bg-indigo-700 text-white">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+            Add
+          </button>
         </div>
 
-        <p x-show="notifications.length === 0" class="text-sm text-slate-400 dark:text-slate-500 py-4">No notification channels configured.</p>
+        <!-- Add / edit editor -->
+        <div x-show="showEditor" class="card card-body space-y-3">
+          <h3 class="text-sm font-semibold text-slate-700 dark:text-slate-300" x-text="editorIndex === -1 ? 'Add channel' : 'Edit channel'"></h3>
 
-        <template x-for="(ch, i) in notifications" :key="i">
-          <div class="card card-body space-y-3">
-            <div class="flex items-center justify-between gap-3">
-              <div class="flex items-center gap-2">
-                <span class="badge-ok" x-text="channelTypeLabel(ch.type)"></span>
-                <label class="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
-                  <input type="checkbox" x-model="ch.enabled" class="rounded" /> Enabled
-                </label>
-              </div>
-              <div class="flex items-center gap-2">
-                <button @click="testChannel(i)" class="btn-sm ring-1 ring-slate-200 dark:ring-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800">Test</button>
-                <button @click="removeChannel(i)" class="btn-sm text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30">Remove</button>
-              </div>
-            </div>
-            <div>
-              <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Name</label>
-              <input type="text" x-model="ch.name" class="input" placeholder="e.g. Ops alerts" />
-            </div>
-            <div class="grid sm:grid-cols-2 gap-3">
-              <template x-for="field in channelFields(ch.type)" :key="field">
-                <div>
-                  <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1" x-text="field"></label>
-                  <input :type="field.includes('password') || field === 'token' ? 'password' : 'text'"
-                    x-model="ch.config[field]" class="input font-mono text-xs" autocomplete="off" />
-                </div>
-              </template>
-            </div>
+          <div>
+            <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Type</label>
+            <select x-model="editor.type" @change="onEditorTypeChange()" class="input">
+              <option value="shoutrrr">Shoutrrr</option>
+              <option value="greenapi">WhatsApp (GreenAPI)</option>
+              <option value="gowa">WhatsApp (go-whatsapp-web)</option>
+            </select>
           </div>
-        </template>
 
-        <button @click="saveSettings()" :disabled="saving" class="btn bg-indigo-600 hover:bg-indigo-700 text-white">
-          <span x-text="saving ? 'Saving…' : 'Save notifications'"></span>
-        </button>
+          <div>
+            <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Name</label>
+            <input type="text" x-model="editor.name" class="input" placeholder="e.g. Ops alerts" />
+          </div>
+
+          <div class="grid sm:grid-cols-2 gap-3">
+            <template x-for="field in channelFields(editor.type)" :key="field">
+              <div>
+                <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1" x-text="fieldLabel(field)"></label>
+                <input :type="field.includes('password') || field === 'token' ? 'password' : 'text'"
+                  x-model="editor.config[field]" class="input font-mono text-xs" autocomplete="off" />
+              </div>
+            </template>
+          </div>
+
+          <label class="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
+            <input type="checkbox" x-model="editor.enabled" class="rounded" /> Enabled
+          </label>
+
+          <div class="flex items-center gap-2 pt-1">
+            <button @click="saveEditor()" :disabled="saving" class="btn bg-indigo-600 hover:bg-indigo-700 text-white">
+              <span x-text="editorIndex === -1 ? 'Add channel' : 'Save changes'"></span>
+            </button>
+            <button @click="cancelEditor()" class="btn-sm ring-1 ring-slate-200 dark:ring-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800">Cancel</button>
+            <button @click="testEditor()" class="btn-sm ring-1 ring-slate-200 dark:ring-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 ml-auto">Test</button>
+          </div>
+        </div>
+
+        <!-- Channel list -->
+        <p x-show="notifications.length === 0 && !showEditor" class="text-sm text-slate-400 dark:text-slate-500 py-4">No notification channels configured.</p>
+
+        <div x-show="notifications.length > 0" class="card overflow-hidden">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="bg-slate-50/80 dark:bg-slate-800/40 text-xs text-slate-500 dark:text-slate-400">
+                <th class="text-left px-4 py-2.5 font-medium">Type</th>
+                <th class="text-left px-4 py-2.5 font-medium">Name</th>
+                <th class="text-left px-4 py-2.5 font-medium">Status</th>
+                <th class="px-4 py-2.5"></th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 dark:divide-slate-800/60">
+              <template x-for="(ch, i) in notifications" :key="ch.id || i">
+                <tr>
+                  <td class="px-4 py-2.5"><span class="badge-ok" x-text="channelTypeLabel(ch.type)"></span></td>
+                  <td class="px-4 py-2.5 text-slate-900 dark:text-white" x-text="ch.name || '(unnamed)'"></td>
+                  <td class="px-4 py-2.5">
+                    <span :class="ch.enabled ? 'badge-ok' : 'badge-error'" x-text="ch.enabled ? 'Enabled' : 'Disabled'"></span>
+                  </td>
+                  <td class="px-4 py-2.5 text-right whitespace-nowrap">
+                    <button @click="openEdit(i)" class="btn-sm ring-1 ring-slate-200 dark:ring-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800">Edit</button>
+                    <button @click="removeChannel(i)" class="btn-sm text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30">Remove</button>
+                  </td>
+                </tr>
+              </template>
+            </tbody>
+          </table>
+        </div>
       </section>
 
       <!-- ============ AUTHENTICATION ============ -->

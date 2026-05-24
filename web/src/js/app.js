@@ -498,6 +498,11 @@ function settingsApp() {
     notifications: [],
     disabledResolvers: [],
 
+    // Notification channel editor (add/edit)
+    showEditor: false,
+    editorIndex: -1, // -1 = adding a new channel
+    editor: { id: '', type: 'shoutrrr', name: '', enabled: true, config: {} },
+
     // API tokens
     tokens: [],
     newTokenName: '',
@@ -628,17 +633,75 @@ function settingsApp() {
     channelTypeLabel(type) {
       return { shoutrrr: 'Shoutrrr', greenapi: 'WhatsApp (GreenAPI)', gowa: 'WhatsApp (go-whatsapp-web)' }[type] || type;
     },
-    addChannel(type) {
-      this.notifications.push({ id: '', type, name: '', enabled: true, config: this.channelDefaults(type) });
+    fieldLabel(field) {
+      return {
+        url: 'Shoutrrr URL',
+        instance_id: 'Instance ID',
+        token: 'API token',
+        base_url: 'Base URL',
+        username: 'Username',
+        password: 'Password',
+        recipient: 'Recipient',
+      }[field] || field;
     },
-    removeChannel(i) {
+
+    // Open the editor to add a new channel.
+    openAdd() {
+      this.editorIndex = -1;
+      this.editor = { id: '', type: 'shoutrrr', name: '', enabled: true, config: this.channelDefaults('shoutrrr') };
+      this.showEditor = true;
+    },
+    // Open the editor pre-filled to edit an existing channel.
+    openEdit(i) {
+      const ch = this.notifications[i];
+      this.editorIndex = i;
+      this.editor = {
+        id: ch.id,
+        type: ch.type,
+        name: ch.name,
+        enabled: ch.enabled,
+        config: { ...this.channelDefaults(ch.type), ...(ch.config || {}) },
+      };
+      this.showEditor = true;
+    },
+    // Reset the config fields when the selected type changes.
+    onEditorTypeChange() {
+      this.editor.config = this.channelDefaults(this.editor.type);
+    },
+    cancelEditor() {
+      this.showEditor = false;
+    },
+    // Upsert the edited channel and persist.
+    async saveEditor() {
+      if (!this.editor.name.trim()) {
+        this.flash('Channel name is required.', true);
+        return;
+      }
+      const channel = {
+        id: this.editor.id,
+        type: this.editor.type,
+        name: this.editor.name.trim(),
+        enabled: this.editor.enabled,
+        config: { ...this.editor.config },
+      };
+      if (this.editorIndex === -1) {
+        this.notifications.push(channel);
+      } else {
+        this.notifications[this.editorIndex] = channel;
+      }
+      this.showEditor = false;
+      await this.saveSettings();
+    },
+    async removeChannel(i) {
       this.notifications.splice(i, 1);
+      await this.saveSettings();
     },
-    async testChannel(i) {
+    // Send a test notification using the channel currently in the editor.
+    async testEditor() {
       const resp = await fetch('/api/v1/settings/notifications/test', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(this.notifications[i]),
+        body: JSON.stringify(this.editor),
       });
       const e = await resp.json().catch(() => ({}));
       this.flash(e?.error?.message || `HTTP ${resp.status}`, !resp.ok);
