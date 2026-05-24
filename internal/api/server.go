@@ -11,6 +11,7 @@ import (
 	v1 "github.com/t0mer/dnsmon/internal/api/v1"
 	"github.com/t0mer/dnsmon/internal/checker"
 	"github.com/t0mer/dnsmon/internal/config"
+	"github.com/t0mer/dnsmon/internal/notify"
 	"github.com/t0mer/dnsmon/internal/resolvers"
 	"github.com/t0mer/dnsmon/internal/storage"
 	"github.com/t0mer/dnsmon/web"
@@ -135,7 +136,7 @@ func (s *Server) routes() {
 
 			r.Get("/settings", v1.GetSettings(s.storage))
 			r.Put("/settings", v1.UpdateSettings(s.storage))
-			r.Post("/settings/notifications/test", v1.TestNotification())
+			r.Post("/settings/notifications/test", v1.TestNotification(notify.New()))
 			r.Get("/settings/tokens", v1.ListTokens(s.storage))
 			r.Post("/settings/tokens", v1.CreateToken(s.storage))
 			r.Delete("/settings/tokens/{id}", v1.DeleteToken(s.storage))

@@ -8,6 +8,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/t0mer/dnsmon/internal/api/apierr"
+	"github.com/t0mer/dnsmon/internal/notify"
 	"github.com/t0mer/dnsmon/internal/settings"
 	"github.com/t0mer/dnsmon/internal/storage"
 )
@@ -354,11 +355,24 @@ func findSchedule(store storage.Storage, r *http.Request, id string) (*settings.
 	return nil, storage.ErrNotFound
 }
 
-// TestNotification handles POST /api/v1/settings/notifications/test.
-// Sending is implemented in a later change; this is a stub.
-func TestNotification() http.HandlerFunc {
+// TestNotification handles POST /api/v1/settings/notifications/test. It sends a
+// test message to the channel described in the request body.
+func TestNotification(sender *notify.Sender) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		apierr.WriteError(w, r, http.StatusNotImplemented, "NOT_IMPLEMENTED",
-			"Notification delivery is not implemented yet.", nil)
+		var ch settings.NotificationChannel
+		if err := json.NewDecoder(r.Body).Decode(&ch); err != nil {
+			apierr.WriteError(w, r, http.StatusBadRequest, apierr.ErrCodeInvalidInput, "Invalid request body.", nil)
+			return
+		}
+		if ch.Type == "" {
+			apierr.WriteError(w, r, http.StatusBadRequest, apierr.ErrCodeInvalidInput, "Channel type is required.", nil)
+			return
+		}
+
+		if err := sender.Send(r.Context(), ch, "dnsmon test notification — your channel is configured correctly."); err != nil {
+			apierr.WriteError(w, r, http.StatusBadGateway, "NOTIFY_FAILED", err.Error(), nil)
+			return
+		}
+		apierr.WriteJSON(w, http.StatusOK, map[string]string{"status": "sent"})
 	}
 }

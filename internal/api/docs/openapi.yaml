@@ -737,12 +737,35 @@ paths:
 
   /settings/notifications/test:
     post:
-      summary: Send a test notification (not implemented yet)
+      summary: Send a test notification to a channel
+      description: Delivers a test message using the channel in the request body (not necessarily a saved channel).
       operationId: testNotification
       tags: [Settings]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NotificationChannel'
       responses:
-        '501':
-          description: Not implemented
+        '200':
+          description: Test message sent
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: sent
+        '400':
+          description: Invalid channel
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '502':
+          description: Delivery failed
           content:
             application/json:
               schema:
