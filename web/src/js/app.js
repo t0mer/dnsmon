@@ -52,15 +52,9 @@ function dnsmonApp() {
     checkId: '',
     shareLabel: 'Share',
 
-    // Live / WebSocket
-    liveActive: false,
-    _ws: null,
-
     // Progress
     progressPct: 0,
     progressLabel: 'Querying resolvers...',
-    _totalResolvers: 0,
-    _receivedCount: 0,
 
     // Sorting
     sortBy: 'country',
@@ -99,121 +93,58 @@ function dnsmonApp() {
     },
 
     // ---------------------------------------------------------------------------
-    // Check (HTTP)
+    // Check (streamed over WebSocket so the progress bar reflects real progress
+    // as each resolver responds).
     // ---------------------------------------------------------------------------
-    async check() {
+    check() {
       if (!this.domain.trim()) return;
       this._resetResults();
       this.loading = true;
       this.errorMsg = '';
-
-      try {
-        const resp = await fetch('/api/v1/check', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            name: this.domain.trim(),
-            type: this.type,
-            save: true,
-          }),
-        });
-
-        if (!resp.ok) {
-          const err = await resp.json().catch(() => ({ error: { message: resp.statusText } }));
-          throw new Error(err?.error?.message || `HTTP ${resp.status}`);
-        }
-
-        const data = await resp.json();
-        this.results = data.results || [];
-        this.summary = data.summary || null;
-        this.checkId = data.id || '';
-        this.progressPct = 100;
-
-        if (this._markerLayer) {
-          window.updateMarkers(this._markerLayer, this.results);
-        }
-      } catch (err) {
-        this.errorMsg = err.message;
-      } finally {
-        this.loading = false;
-      }
-    },
-
-    // ---------------------------------------------------------------------------
-    // Live check (WebSocket)
-    // ---------------------------------------------------------------------------
-    toggleLive() {
-      if (this.liveActive) {
-        this._stopLive();
-      } else {
-        this._startLive();
-      }
-    },
-
-    _startLive() {
-      if (!this.domain.trim()) return;
-      this._resetResults();
-      this.liveActive = true;
-      this.loading = true;
-      this.errorMsg = '';
+      this.progressLabel = 'Querying resolvers…';
 
       const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      const wsUrl = `${proto}//${window.location.host}/api/v1/check/stream`;
-      this._ws = new WebSocket(wsUrl);
+      const ws = new WebSocket(`${proto}//${window.location.host}/api/v1/check/stream`);
+      let total = 0;
+      let received = 0;
 
-      this._ws.onopen = () => {
-        this._ws.send(JSON.stringify({ name: this.domain.trim(), type: this.type }));
+      ws.onopen = () => {
+        ws.send(JSON.stringify({ name: this.domain.trim(), type: this.type }));
       };
 
-      this._ws.onmessage = (event) => {
+      ws.onmessage = (event) => {
         let msg;
         try { msg = JSON.parse(event.data); } catch { return; }
 
-        if (msg.type === 'result' && msg.data) {
+        if (msg.type === 'total') {
+          total = msg.data?.total || 0;
+          this.progressLabel = `Querying ${total} resolvers…`;
+        } else if (msg.type === 'result' && msg.data) {
           this.results.push(msg.data);
-          this._receivedCount++;
-          if (this._totalResolvers > 0) {
-            this.progressPct = Math.round((this._receivedCount / this._totalResolvers) * 100);
-          }
+          received++;
+          this.progressPct = total > 0 ? Math.round((received / total) * 100) : 0;
           if (this._markerLayer) {
             window.updateMarkers(this._markerLayer, this.results);
           }
-        } else if (msg.type === 'total' && msg.data) {
-          this._totalResolvers = msg.data.total || 0;
-          this.progressLabel = `Querying ${this._totalResolvers} resolvers...`;
         } else if (msg.type === 'done' && msg.data) {
           this.summary = msg.data.summary || null;
           this.checkId = msg.data.id || '';
           this.progressPct = 100;
-          this.loading = false;
-          this.liveActive = false;
-          this._ws = null;
         } else if (msg.type === 'error') {
-          this.errorMsg = msg.data?.message || 'Stream error';
-          this._stopLive();
+          this.errorMsg = msg.data?.message || 'Check failed.';
         }
       };
 
-      this._ws.onerror = () => {
-        this.errorMsg = 'WebSocket connection failed.';
-        this._stopLive();
-      };
-
-      this._ws.onclose = () => {
+      ws.onerror = () => {
+        this.errorMsg = 'Connection to the server failed.';
         this.loading = false;
-        this.liveActive = false;
-        this._ws = null;
+      };
+
+      ws.onclose = () => {
+        this.loading = false;
       };
     },
 
-    _stopLive() {
-      if (this._ws) {
-        this._ws.close();
-        this._ws = null;
-      }
-      this.liveActive = false;
-      this.loading = false;
-    },
 
     // ---------------------------------------------------------------------------
     // Permalink
@@ -242,13 +173,41 @@ function dnsmonApp() {
 
     share() {
       if (!this.checkId) return;
+      // Build the link from the address the browser is on, so it works behind a
+      // reverse proxy / on any host (not just localhost).
       const url = `${window.location.origin}/check/${this.checkId}`;
-      navigator.clipboard.writeText(url).then(() => {
+      this._copyLink(url);
+    },
+
+    _copyLink(text) {
+      const copied = () => {
         this.shareLabel = 'Copied!';
         setTimeout(() => { this.shareLabel = 'Share'; }, 2000);
-      }).catch(() => {
-        window.prompt('Copy this link:', url);
-      });
+      };
+      // The async Clipboard API only exists in a secure context (HTTPS or
+      // localhost); on plain-HTTP hosts it's undefined, so guard and fall back.
+      if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(text).then(copied).catch(() => this._fallbackCopy(text, copied));
+      } else {
+        this._fallbackCopy(text, copied);
+      }
+    },
+
+    _fallbackCopy(text, copied) {
+      try {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.setAttribute('readonly', '');
+        ta.style.position = 'fixed';
+        ta.style.top = '-1000px';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        const ok = document.execCommand('copy');
+        document.body.removeChild(ta);
+        if (ok) { copied(); return; }
+      } catch (_) { /* fall through to prompt */ }
+      window.prompt('Copy this link:', text);
     },
 
     // ---------------------------------------------------------------------------
@@ -381,8 +340,6 @@ function dnsmonApp() {
       this.checkId = '';
       this.progressPct = 0;
       this.progressLabel = 'Querying resolvers...';
-      this._receivedCount = 0;
-      this._totalResolvers = 0;
       this.shareLabel = 'Share';
       this.page = 1;
       if (this._markerLayer) {

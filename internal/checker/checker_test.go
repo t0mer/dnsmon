@@ -200,10 +200,13 @@ func TestStream_DeliversResults(t *testing.T) {
 	store := &storage.Noop{}
 	c := checker.New(client, reg, &mockCache{}, store, testConfig())
 
-	resultCh, doneCh := c.Stream(context.Background(), checker.StreamRequest{
+	total, id, resultCh, doneCh, err := c.Stream(context.Background(), checker.StreamRequest{
 		Name: "example.com",
 		Type: "A",
-	})
+	}, false)
+	require.NoError(t, err)
+	assert.Equal(t, 2, total)
+	assert.NotEmpty(t, id)
 
 	var results []*dnsclient.ResolverResult
 	for r := range resultCh {
