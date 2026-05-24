@@ -135,6 +135,67 @@ components:
               type: string
               format: date-time
 
+    MonitorInput:
+      type: object
+      required: [type, fqdn, record_type]
+      properties:
+        name:
+          type: string
+        type:
+          type: string
+          enum: [propagation, change]
+        fqdn:
+          type: string
+        record_type:
+          type: string
+        expected:
+          type: array
+          items:
+            type: string
+          description: Required values (propagation) or the baseline (change).
+        scheduler_id:
+          type: string
+        channel_id:
+          type: string
+        enabled:
+          type: boolean
+
+    Monitor:
+      allOf:
+        - $ref: '#/components/schemas/MonitorInput'
+        - type: object
+          properties:
+            id:
+              type: string
+            created_at:
+              type: string
+              format: date-time
+            updated_at:
+              type: string
+              format: date-time
+
+    MonitorEvent:
+      type: object
+      properties:
+        id:
+          type: string
+        monitor_id:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+        status:
+          type: string
+          enum: [created, ok, not_propagated, changed, error]
+        observed:
+          type: array
+          items:
+            type: string
+        message:
+          type: string
+        notified:
+          type: boolean
+
     Answer:
       type: object
       properties:
@@ -895,5 +956,133 @@ paths:
       responses:
         '204':
           description: Deleted
+        '404':
+          description: Not found
+
+  /settings/monitors:
+    get:
+      summary: List monitors
+      operationId: listMonitors
+      tags: [Settings]
+      responses:
+        '200':
+          description: Monitors
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Monitor'
+    post:
+      summary: Create a monitor
+      operationId: createMonitor
+      tags: [Settings]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MonitorInput'
+      responses:
+        '201':
+          description: Created monitor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Monitor'
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /settings/monitors/{id}:
+    put:
+      summary: Update a monitor
+      operationId: updateMonitor
+      tags: [Settings]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MonitorInput'
+      responses:
+        '200':
+          description: Updated monitor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Monitor'
+        '404':
+          description: Not found
+    delete:
+      summary: Delete a monitor
+      operationId: deleteMonitor
+      tags: [Settings]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Deleted
+        '404':
+          description: Not found
+
+  /settings/monitors/{id}/history:
+    get:
+      summary: Get a monitor's changelog
+      operationId: monitorHistory
+      tags: [Settings]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 100
+      responses:
+        '200':
+          description: Changelog events, most recent first
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MonitorEvent'
+
+  /settings/monitors/{id}/run:
+    post:
+      summary: Evaluate a monitor now
+      description: Runs the monitor immediately (propagation check or change comparison), records a changelog entry, and notifies the bound channel on an alert. Returns the resulting event.
+      operationId: runMonitor
+      tags: [Settings]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Evaluation result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MonitorEvent'
         '404':
           description: Not found

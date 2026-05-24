@@ -18,7 +18,7 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("storage.dsn", "file:./dnsmon.db?cache=shared&_fk=1")
 	v.SetDefault("storage.retention_days", 30)
 
-	v.SetDefault("cache.driver", "memory")
+	v.SetDefault("cache.driver", "none")
 	v.SetDefault("cache.ttl", "60s")
 	v.SetDefault("cache.size", 10000)
 

@@ -31,6 +31,9 @@ type CheckRequest struct {
 	CustomResolvers []dnsclient.Resolver
 	Save            bool
 	AllowPrivate    bool
+	// NoCache forces a fresh query to every resolver, bypassing the response
+	// cache (used by monitors so each run is a full live test).
+	NoCache bool
 }
 
 // LookupRequest describes a single-resolver detailed lookup.
@@ -124,7 +127,7 @@ func (c *Checker) Check(ctx context.Context, req CheckRequest) (*dnsclient.Check
 		return nil, err
 	}
 
-	results := c.fanOut(ctx, req.Name, req.Type, resolverList)
+	results := c.fanOut(ctx, req.Name, req.Type, resolverList, req.NoCache)
 
 	check := &dnsclient.Check{
 		ID:        NewID(req.Name, req.Type),
@@ -241,7 +244,7 @@ func (c *Checker) disabledResolverSet(ctx context.Context) map[string]struct{} {
 	return set
 }
 
-func (c *Checker) fanOut(ctx context.Context, name, qtype string, resolverList []dnsclient.Resolver) []dnsclient.ResolverResult {
+func (c *Checker) fanOut(ctx context.Context, name, qtype string, resolverList []dnsclient.Resolver, noCache bool) []dnsclient.ResolverResult {
 	concurrency := c.cfg.DNS.PerResolverConcurrency
 	if concurrency <= 0 {
 		concurrency = 4
@@ -258,7 +261,7 @@ func (c *Checker) fanOut(ctx context.Context, name, qtype string, resolverList [
 			sem <- struct{}{}
 			defer func() { <-sem }()
 
-			result := c.queryWithCache(ctx, resolver, name, qtype)
+			result := c.queryWithCache(ctx, resolver, name, qtype, noCache)
 			results[idx] = *result
 
 			c.m.queryTotal.WithLabelValues(resolver.ID, result.Status).Inc()
@@ -271,17 +274,20 @@ func (c *Checker) fanOut(ctx context.Context, name, qtype string, resolverList [
 	return results
 }
 
-func (c *Checker) queryWithCache(ctx context.Context, resolver dnsclient.Resolver, name, qtype string) *dnsclient.ResolverResult {
+func (c *Checker) queryWithCache(ctx context.Context, resolver dnsclient.Resolver, name, qtype string, noCache bool) *dnsclient.ResolverResult {
 	cacheKey := cache.Key(resolver.ID, name, qtype)
 
-	if data, ok := c.cache.Get(ctx, cacheKey); ok {
-		c.m.cacheHits.Inc()
-		var result dnsclient.ResolverResult
-		if err := json.Unmarshal(data, &result); err == nil {
-			return &result
+	// noCache bypasses the cache entirely so each call is a fresh live query.
+	if !noCache {
+		if data, ok := c.cache.Get(ctx, cacheKey); ok {
+			c.m.cacheHits.Inc()
+			var result dnsclient.ResolverResult
+			if err := json.Unmarshal(data, &result); err == nil {
+				return &result
+			}
 		}
+		c.m.cacheMisses.Inc()
 	}
-	c.m.cacheMisses.Inc()
 
 	qtypeNum, _ := dnsclient.ParseType(qtype)
 	result, err := c.client.Query(ctx, resolver, name, qtypeNum)
@@ -294,8 +300,10 @@ func (c *Checker) queryWithCache(ctx context.Context, resolver dnsclient.Resolve
 		}
 	}
 
-	if data, err := json.Marshal(result); err == nil {
-		_ = c.cache.Set(ctx, cacheKey, data, c.cfg.Cache.TTL)
+	if !noCache {
+		if data, err := json.Marshal(result); err == nil {
+			_ = c.cache.Set(ctx, cacheKey, data, c.cfg.Cache.TTL)
+		}
 	}
 
 	return result

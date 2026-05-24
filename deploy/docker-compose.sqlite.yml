@@ -13,7 +13,7 @@ services:
       PORT: "8080"
       DNSMON_STORAGE_DRIVER: "sqlite"
       DNSMON_STORAGE_DSN: "file:/data/dnsmon.db?cache=shared&_fk=1"
-      DNSMON_CACHE_DRIVER: "memory"
+      DNSMON_CACHE_DRIVER: "none"
       DNSMON_LOG_FORMAT: "json"
     volumes:
       - dnsmondata:/data

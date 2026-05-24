@@ -246,6 +246,28 @@ func TestCache_Integration(t *testing.T) {
 	assert.Equal(t, first, callCount)
 }
 
+func TestNoCache_AlwaysQueries(t *testing.T) {
+	res1 := dnsclient.Resolver{ID: "r1", Name: "R1", IP: "1.1.1.1", Port: 53}
+
+	callCount := 0
+	client := &countingClient{inner: &mockClient{}, callCount: &callCount}
+	mem, err := cache.NewMemory(100)
+	require.NoError(t, err)
+
+	reg := testRegistry([]dnsclient.Resolver{res1})
+	c := checker.New(client, reg, mem, &storage.Noop{}, testConfig())
+	ctx := context.Background()
+
+	_, err = c.Check(ctx, checker.CheckRequest{Name: "example.com", Type: "A", NoCache: true})
+	require.NoError(t, err)
+	first := callCount
+
+	// With NoCache the second check must query again, not serve from cache.
+	_, err = c.Check(ctx, checker.CheckRequest{Name: "example.com", Type: "A", NoCache: true})
+	require.NoError(t, err)
+	assert.Greater(t, callCount, first, "NoCache check should re-query, not use the cache")
+}
+
 type countingClient struct {
 	inner     dnsclient.Client
 	callCount *int
