@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -228,12 +229,9 @@ func ListSchedules(store storage.Storage) http.HandlerFunc {
 }
 
 type scheduleRequest struct {
-	Name        string   `json:"name" validate:"required"`
-	Domain      string   `json:"domain" validate:"required"`
-	Type        string   `json:"type" validate:"required"`
-	Resolvers   []string `json:"resolvers"`
-	IntervalSec int      `json:"interval_sec"`
-	Enabled     bool     `json:"enabled"`
+	Name    string `json:"name" validate:"required"`
+	Cron    string `json:"cron" validate:"required"`
+	Enabled bool   `json:"enabled"`
 }
 
 func (req scheduleRequest) validate(w http.ResponseWriter, r *http.Request) bool {
@@ -241,11 +239,31 @@ func (req scheduleRequest) validate(w http.ResponseWriter, r *http.Request) bool
 		apierr.WriteError(w, r, http.StatusBadRequest, apierr.ErrCodeInvalidInput, err.Error(), nil)
 		return false
 	}
-	if !domainRE.MatchString(req.Domain) {
-		apierr.WriteError(w, r, http.StatusBadRequest, apierr.ErrCodeInvalidDomain, "Invalid domain name.", nil)
+	if !validCron(req.Cron) {
+		apierr.WriteError(w, r, http.StatusBadRequest, apierr.ErrCodeInvalidInput,
+			"Invalid schedule: use @hourly, @daily, @weekly, @monthly, @yearly, or a 5/6-field cron expression.", nil)
 		return false
 	}
 	return true
+}
+
+// validCron does a light syntactic check: a recognised @macro, an @every
+// duration, or a cron expression with 5 or 6 whitespace-separated fields.
+// Full parsing happens when schedule execution is implemented.
+func validCron(expr string) bool {
+	expr = strings.TrimSpace(expr)
+	if expr == "" {
+		return false
+	}
+	switch expr {
+	case "@hourly", "@daily", "@weekly", "@monthly", "@yearly", "@annually", "@midnight":
+		return true
+	}
+	if strings.HasPrefix(expr, "@every ") {
+		return len(strings.TrimSpace(strings.TrimPrefix(expr, "@every "))) > 0
+	}
+	n := len(strings.Fields(expr))
+	return n == 5 || n == 6
 }
 
 // CreateSchedule handles POST /api/v1/settings/schedules.
@@ -263,15 +281,12 @@ func CreateSchedule(store storage.Storage) http.HandlerFunc {
 
 		now := time.Now().UTC()
 		sc := &settings.Schedule{
-			ID:          settings.NewID(),
-			Name:        req.Name,
-			Domain:      req.Domain,
-			Type:        req.Type,
-			Resolvers:   req.Resolvers,
-			IntervalSec: req.IntervalSec,
-			Enabled:     req.Enabled,
-			CreatedAt:   now,
-			UpdatedAt:   now,
+			ID:        settings.NewID(),
+			Name:      req.Name,
+			Cron:      strings.TrimSpace(req.Cron),
+			Enabled:   req.Enabled,
+			CreatedAt: now,
+			UpdatedAt: now,
 		}
 		if err := store.SaveSchedule(r.Context(), sc); err != nil {
 			apierr.WriteError(w, r, http.StatusInternalServerError, apierr.ErrCodeInternal,
@@ -309,10 +324,7 @@ func UpdateSchedule(store storage.Storage) http.HandlerFunc {
 		}
 
 		existing.Name = req.Name
-		existing.Domain = req.Domain
-		existing.Type = req.Type
-		existing.Resolvers = req.Resolvers
-		existing.IntervalSec = req.IntervalSec
+		existing.Cron = strings.TrimSpace(req.Cron)
 		existing.Enabled = req.Enabled
 		existing.UpdatedAt = time.Now().UTC()
 

@@ -266,44 +266,50 @@
 
       <!-- ============ SCHEDULERS ============ -->
       <section x-show="activeTab === 'schedules'" class="space-y-4">
+        <p class="text-sm text-slate-500 dark:text-slate-400">
+          Define reusable schedules (how often). Monitors will attach to a schedule to decide when they run.
+        </p>
+
         <div class="card card-body grid sm:grid-cols-2 gap-3">
           <div>
             <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Name</label>
-            <input type="text" x-model="scheduleForm.name" class="input" placeholder="e.g. Watch example.com" />
+            <input type="text" x-model="scheduleForm.name" class="input" placeholder="e.g. Hourly checks" />
           </div>
           <div>
-            <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Domain</label>
-            <input type="text" x-model="scheduleForm.domain" class="input" placeholder="example.com" />
-          </div>
-          <div>
-            <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Record type</label>
-            <select x-model="scheduleForm.type" class="input">
-              <template x-for="t in ['A','AAAA','CNAME','MX','NS','TXT','CAA','SRV','SOA']" :key="t">
-                <option x-text="t"></option>
-              </template>
+            <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Cadence</label>
+            <select x-model="scheduleForm.cadence" class="input">
+              <option value="@hourly">Hourly</option>
+              <option value="@daily">Daily</option>
+              <option value="@weekly">Weekly</option>
+              <option value="@monthly">Monthly</option>
+              <option value="custom">Custom (cron)…</option>
             </select>
           </div>
-          <div>
-            <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Interval (seconds)</label>
-            <input type="number" min="30" x-model.number="scheduleForm.interval_sec" class="input" />
+          <div class="sm:col-span-2" x-show="scheduleForm.cadence === 'custom'">
+            <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Cron expression</label>
+            <input type="text" x-model="scheduleForm.cron" class="input font-mono text-xs" placeholder="*/15 * * * *" />
+            <p class="text-xs text-slate-400 dark:text-slate-500 mt-1">5 or 6 fields (min hour dom mon dow), or an @every duration.</p>
           </div>
           <div class="sm:col-span-2 flex items-center justify-between">
             <label class="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
               <input type="checkbox" x-model="scheduleForm.enabled" class="rounded" /> Enabled
             </label>
-            <button @click="createSchedule()" class="btn bg-indigo-600 hover:bg-indigo-700 text-white">Add schedule</button>
+            <div class="flex items-center gap-2">
+              <button x-show="scheduleEditId" @click="cancelScheduleEdit()" class="btn-sm ring-1 ring-slate-200 dark:ring-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800">Cancel</button>
+              <button @click="saveSchedule()" class="btn bg-indigo-600 hover:bg-indigo-700 text-white">
+                <span x-text="scheduleEditId ? 'Save changes' : 'Add scheduler'"></span>
+              </button>
+            </div>
           </div>
         </div>
 
-        <p x-show="schedules.length === 0" class="text-sm text-slate-400 dark:text-slate-500 py-4">No schedules yet.</p>
+        <p x-show="schedules.length === 0" class="text-sm text-slate-400 dark:text-slate-500 py-4">No schedulers yet.</p>
         <div x-show="schedules.length > 0" class="card overflow-hidden">
           <table class="w-full text-sm">
             <thead>
               <tr class="bg-slate-50/80 dark:bg-slate-800/40 text-xs text-slate-500 dark:text-slate-400">
                 <th class="text-left px-4 py-2.5 font-medium">Name</th>
-                <th class="text-left px-4 py-2.5 font-medium">Domain</th>
-                <th class="text-left px-4 py-2.5 font-medium">Type</th>
-                <th class="text-left px-4 py-2.5 font-medium">Every</th>
+                <th class="text-left px-4 py-2.5 font-medium">Schedule</th>
                 <th class="text-left px-4 py-2.5 font-medium">Status</th>
                 <th class="px-4 py-2.5"></th>
               </tr>
@@ -312,13 +318,12 @@
               <template x-for="s in schedules" :key="s.id">
                 <tr>
                   <td class="px-4 py-2.5 text-slate-900 dark:text-white" x-text="s.name"></td>
-                  <td class="px-4 py-2.5 font-mono text-xs" x-text="s.domain"></td>
-                  <td class="px-4 py-2.5" x-text="s.type"></td>
-                  <td class="px-4 py-2.5 text-xs text-slate-500" x-text="intervalLabel(s.interval_sec)"></td>
+                  <td class="px-4 py-2.5 font-mono text-xs text-slate-500 dark:text-slate-400" x-text="s.cron"></td>
                   <td class="px-4 py-2.5">
                     <span :class="s.enabled ? 'badge-ok' : 'badge-error'" x-text="s.enabled ? 'Enabled' : 'Disabled'"></span>
                   </td>
-                  <td class="px-4 py-2.5 text-right">
+                  <td class="px-4 py-2.5 text-right whitespace-nowrap">
+                    <button @click="editSchedule(s)" class="btn-sm ring-1 ring-slate-200 dark:ring-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800">Edit</button>
                     <button @click="deleteSchedule(s.id)" class="btn-sm text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30">Delete</button>
                   </td>
                 </tr>
@@ -326,7 +331,7 @@
             </tbody>
           </table>
         </div>
-        <p class="text-xs text-slate-400 dark:text-slate-500">Schedule execution and change alerts are added in a later release; this manages the definitions.</p>
+        <p class="text-xs text-slate-400 dark:text-slate-500">Schedule execution and attaching monitors are added in a later release; this manages the schedule definitions.</p>
       </section>
 
     </div>

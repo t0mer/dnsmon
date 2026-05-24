@@ -103,29 +103,41 @@ func TestCreateToken_ShownOnceThenListedWithoutSecret(t *testing.T) {
 	assert.Equal(t, "ci", list[0]["name"])
 }
 
-func TestCreateSchedule_AndInvalidDomain(t *testing.T) {
+func TestCreateSchedule_AndInvalidCron(t *testing.T) {
 	store := newSettingsStore(t)
 	r := chi.NewRouter()
 	r.Post("/api/v1/settings/schedules", v1.CreateSchedule(store))
 	r.Get("/api/v1/settings/schedules", v1.ListSchedules(store))
 
-	// Valid.
+	// Valid macro cadence.
 	rr := httptest.NewRecorder()
 	r.ServeHTTP(rr, httptest.NewRequest(http.MethodPost, "/api/v1/settings/schedules",
-		bytes.NewBufferString(`{"name":"watch","domain":"example.com","type":"A","interval_sec":300,"enabled":true}`)))
+		bytes.NewBufferString(`{"name":"nightly","cron":"@daily","enabled":true}`)))
 	require.Equal(t, http.StatusCreated, rr.Code)
 
-	// Invalid domain.
+	// Valid 5-field cron expression.
 	rr = httptest.NewRecorder()
 	r.ServeHTTP(rr, httptest.NewRequest(http.MethodPost, "/api/v1/settings/schedules",
-		bytes.NewBufferString(`{"name":"bad","domain":"not a domain!","type":"A"}`)))
+		bytes.NewBufferString(`{"name":"every15","cron":"*/15 * * * *","enabled":true}`)))
+	require.Equal(t, http.StatusCreated, rr.Code)
+
+	// Invalid cron.
+	rr = httptest.NewRecorder()
+	r.ServeHTTP(rr, httptest.NewRequest(http.MethodPost, "/api/v1/settings/schedules",
+		bytes.NewBufferString(`{"name":"bad","cron":"not-a-cron"}`)))
 	assert.Equal(t, http.StatusBadRequest, rr.Code)
 
-	// List shows the one valid schedule.
+	// Missing cron.
+	rr = httptest.NewRecorder()
+	r.ServeHTTP(rr, httptest.NewRequest(http.MethodPost, "/api/v1/settings/schedules",
+		bytes.NewBufferString(`{"name":"nocron"}`)))
+	assert.Equal(t, http.StatusBadRequest, rr.Code)
+
+	// List shows the two valid schedules.
 	rr = httptest.NewRecorder()
 	r.ServeHTTP(rr, httptest.NewRequest(http.MethodGet, "/api/v1/settings/schedules", nil))
 	require.Equal(t, http.StatusOK, rr.Code)
 	var list []map[string]any
 	require.NoError(t, json.Unmarshal(rr.Body.Bytes(), &list))
-	assert.Len(t, list, 1)
+	assert.Len(t, list, 2)
 }
