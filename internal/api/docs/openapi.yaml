@@ -110,20 +110,14 @@ components:
 
     ScheduleInput:
       type: object
-      required: [name, domain, type]
+      required: [name, cron]
       properties:
         name:
           type: string
-        domain:
+        cron:
           type: string
-        type:
-          type: string
-        resolvers:
-          type: array
-          items:
-            type: string
-        interval_sec:
-          type: integer
+          description: A cron macro (@hourly, @daily, @weekly, @monthly, @yearly), an @every duration, or a 5/6-field cron expression.
+          example: "@daily"
         enabled:
           type: boolean
 
