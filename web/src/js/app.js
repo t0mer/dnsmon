@@ -93,44 +93,56 @@ function dnsmonApp() {
     },
 
     // ---------------------------------------------------------------------------
-    // Check (HTTP)
+    // Check (streamed over WebSocket so the progress bar reflects real progress
+    // as each resolver responds).
     // ---------------------------------------------------------------------------
-    async check() {
+    check() {
       if (!this.domain.trim()) return;
       this._resetResults();
       this.loading = true;
       this.errorMsg = '';
+      this.progressLabel = 'Querying resolvers…';
 
-      try {
-        const resp = await fetch('/api/v1/check', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            name: this.domain.trim(),
-            type: this.type,
-            save: true,
-          }),
-        });
+      const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const ws = new WebSocket(`${proto}//${window.location.host}/api/v1/check/stream`);
+      let total = 0;
+      let received = 0;
 
-        if (!resp.ok) {
-          const err = await resp.json().catch(() => ({ error: { message: resp.statusText } }));
-          throw new Error(err?.error?.message || `HTTP ${resp.status}`);
+      ws.onopen = () => {
+        ws.send(JSON.stringify({ name: this.domain.trim(), type: this.type }));
+      };
+
+      ws.onmessage = (event) => {
+        let msg;
+        try { msg = JSON.parse(event.data); } catch { return; }
+
+        if (msg.type === 'total') {
+          total = msg.data?.total || 0;
+          this.progressLabel = `Querying ${total} resolvers…`;
+        } else if (msg.type === 'result' && msg.data) {
+          this.results.push(msg.data);
+          received++;
+          this.progressPct = total > 0 ? Math.round((received / total) * 100) : 0;
+          if (this._markerLayer) {
+            window.updateMarkers(this._markerLayer, this.results);
+          }
+        } else if (msg.type === 'done' && msg.data) {
+          this.summary = msg.data.summary || null;
+          this.checkId = msg.data.id || '';
+          this.progressPct = 100;
+        } else if (msg.type === 'error') {
+          this.errorMsg = msg.data?.message || 'Check failed.';
         }
+      };
 
-        const data = await resp.json();
-        this.results = data.results || [];
-        this.summary = data.summary || null;
-        this.checkId = data.id || '';
-        this.progressPct = 100;
-
-        if (this._markerLayer) {
-          window.updateMarkers(this._markerLayer, this.results);
-        }
-      } catch (err) {
-        this.errorMsg = err.message;
-      } finally {
+      ws.onerror = () => {
+        this.errorMsg = 'Connection to the server failed.';
         this.loading = false;
-      }
+      };
+
+      ws.onclose = () => {
+        this.loading = false;
+      };
     },
 
 
