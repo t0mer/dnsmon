@@ -144,6 +144,12 @@ func (s *Server) routes() {
 			r.Post("/settings/schedules", v1.CreateSchedule(s.storage))
 			r.Put("/settings/schedules/{id}", v1.UpdateSchedule(s.storage))
 			r.Delete("/settings/schedules/{id}", v1.DeleteSchedule(s.storage))
+
+			r.Get("/settings/monitors", v1.ListMonitors(s.storage))
+			r.Post("/settings/monitors", v1.CreateMonitor(s.storage))
+			r.Put("/settings/monitors/{id}", v1.UpdateMonitor(s.storage))
+			r.Delete("/settings/monitors/{id}", v1.DeleteMonitor(s.storage))
+			r.Get("/settings/monitors/{id}/history", v1.MonitorHistory(s.storage))
 		})
 	})
 

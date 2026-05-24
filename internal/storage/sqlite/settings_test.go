@@ -76,6 +76,60 @@ func TestAPITokenCRUD(t *testing.T) {
 	}
 }
 
+func TestMonitorCRUDAndEvents(t *testing.T) {
+	ctx := context.Background()
+	s := newTestStore(t)
+
+	now := time.Now().UTC()
+	m := &settings.Monitor{
+		ID: "m1", Name: "watch", Type: settings.MonitorPropagation,
+		FQDN: "example.com", RecordType: "A", Expected: []string{"1.2.3.4"},
+		SchedulerID: "sch1", ChannelID: "ch1", Enabled: true,
+		CreatedAt: now, UpdatedAt: now,
+	}
+	if err := s.SaveMonitor(ctx, m); err != nil {
+		t.Fatalf("SaveMonitor: %v", err)
+	}
+
+	got, err := s.GetMonitor(ctx, "m1")
+	if err != nil || got.FQDN != "example.com" || len(got.Expected) != 1 {
+		t.Fatalf("GetMonitor = %+v, err %v", got, err)
+	}
+
+	// Update (upsert).
+	m.Name = "renamed"
+	m.UpdatedAt = now.Add(time.Minute)
+	if err := s.SaveMonitor(ctx, m); err != nil {
+		t.Fatalf("SaveMonitor update: %v", err)
+	}
+	list, err := s.ListMonitors(ctx)
+	if err != nil || len(list) != 1 || list[0].Name != "renamed" {
+		t.Fatalf("ListMonitors = %+v, err %v", list, err)
+	}
+
+	// Events.
+	ev := &settings.MonitorEvent{ID: "e1", MonitorID: "m1", Timestamp: now,
+		Status: settings.MonitorStatusCreated, Observed: []string{"1.2.3.4"}, Message: "created"}
+	if err := s.AppendMonitorEvent(ctx, ev); err != nil {
+		t.Fatalf("AppendMonitorEvent: %v", err)
+	}
+	events, err := s.ListMonitorEvents(ctx, "m1", 10)
+	if err != nil || len(events) != 1 || events[0].Status != settings.MonitorStatusCreated {
+		t.Fatalf("ListMonitorEvents = %+v, err %v", events, err)
+	}
+
+	// Delete cascades events.
+	if err := s.DeleteMonitor(ctx, "m1"); err != nil {
+		t.Fatalf("DeleteMonitor: %v", err)
+	}
+	if list, _ := s.ListMonitors(ctx); len(list) != 0 {
+		t.Errorf("expected no monitors after delete, got %d", len(list))
+	}
+	if events, _ := s.ListMonitorEvents(ctx, "m1", 10); len(events) != 0 {
+		t.Errorf("expected no events after delete, got %d", len(events))
+	}
+}
+
 func TestScheduleCRUD(t *testing.T) {
 	ctx := context.Background()
 	s := newTestStore(t)
