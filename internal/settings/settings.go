@@ -54,18 +54,16 @@ type APIToken struct {
 	LastUsedAt *time.Time `json:"last_used_at,omitempty"`
 }
 
-// Schedule defines a recurring propagation check for monitoring a record.
-// Execution is implemented in a later change; this stores the definition only.
+// Schedule is a reusable cadence (a cron expression or macro such as @daily /
+// @hourly). Monitors attach to a schedule to decide when they run; the schedule
+// itself carries no domain or record. Execution is implemented in a later change.
 type Schedule struct {
-	ID          string    `json:"id"`
-	Name        string    `json:"name"`
-	Domain      string    `json:"domain"`
-	Type        string    `json:"type"`
-	Resolvers   []string  `json:"resolvers"`
-	IntervalSec int       `json:"interval_sec"`
-	Enabled     bool      `json:"enabled"`
-	CreatedAt   time.Time `json:"created_at"`
-	UpdatedAt   time.Time `json:"updated_at"`
+	ID        string    `json:"id"`
+	Name      string    `json:"name"`
+	Cron      string    `json:"cron"` // "@hourly", "@daily", or a cron expression
+	Enabled   bool      `json:"enabled"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
 }
 
 // Default returns an empty Settings with sensible zero values.

@@ -510,7 +510,8 @@ function settingsApp() {
 
     // Schedules
     schedules: [],
-    scheduleForm: { name: '', domain: '', type: 'A', interval_sec: 300, enabled: true },
+    scheduleForm: { name: '', cadence: '@daily', cron: '', enabled: true },
+    scheduleEditId: '', // '' = adding; otherwise the id being edited
 
     // Resolvers
     resolvers: [],
@@ -736,44 +737,63 @@ function settingsApp() {
       }
     },
 
-    // ---- Schedules ----
-    async createSchedule() {
+    // ---- Schedulers ----
+    // Resolve the cron string from the cadence selector (or the custom field).
+    scheduleCron() {
       const f = this.scheduleForm;
-      if (!f.name.trim() || !f.domain.trim()) return;
-      const resp = await fetch('/api/v1/settings/schedules', {
-        method: 'POST',
+      return f.cadence === 'custom' ? f.cron.trim() : f.cadence;
+    },
+    // Load an existing scheduler into the form for editing.
+    editSchedule(s) {
+      this.scheduleEditId = s.id;
+      const macros = ['@hourly', '@daily', '@weekly', '@monthly'];
+      if (macros.includes(s.cron)) {
+        this.scheduleForm = { name: s.name, cadence: s.cron, cron: '', enabled: s.enabled };
+      } else {
+        this.scheduleForm = { name: s.name, cadence: 'custom', cron: s.cron, enabled: s.enabled };
+      }
+    },
+    cancelScheduleEdit() {
+      this.scheduleEditId = '';
+      this.scheduleForm = { name: '', cadence: '@daily', cron: '', enabled: true };
+    },
+    // Create a new scheduler or update the one being edited.
+    async saveSchedule() {
+      const f = this.scheduleForm;
+      const cron = this.scheduleCron();
+      if (!f.name.trim() || !cron) return;
+
+      const editing = this.scheduleEditId !== '';
+      const url = editing ? '/api/v1/settings/schedules/' + this.scheduleEditId : '/api/v1/settings/schedules';
+      const resp = await fetch(url, {
+        method: editing ? 'PUT' : 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: f.name.trim(),
-          domain: f.domain.trim(),
-          type: f.type,
-          interval_sec: Number(f.interval_sec) || 300,
-          enabled: f.enabled,
-        }),
+        body: JSON.stringify({ name: f.name.trim(), cron, enabled: f.enabled }),
       });
       if (!resp.ok) {
         const e = await resp.json().catch(() => ({}));
-        this.flash(e?.error?.message || 'Failed to create schedule', true);
+        this.flash(e?.error?.message || 'Failed to save scheduler', true);
         return;
       }
       const sc = await resp.json();
-      this.schedules.unshift(sc);
-      this.scheduleForm = { name: '', domain: '', type: 'A', interval_sec: 300, enabled: true };
-      this.flash('Schedule created.');
+      if (editing) {
+        const i = this.schedules.findIndex((x) => x.id === sc.id);
+        if (i !== -1) this.schedules[i] = sc;
+        this.flash('Scheduler updated.');
+      } else {
+        this.schedules.unshift(sc);
+        this.flash('Scheduler created.');
+      }
+      this.cancelScheduleEdit();
     },
     async deleteSchedule(id) {
       const resp = await fetch('/api/v1/settings/schedules/' + id, { method: 'DELETE' });
       if (resp.ok || resp.status === 204) {
         this.schedules = this.schedules.filter((s) => s.id !== id);
-        this.flash('Schedule deleted.');
+        this.flash('Scheduler deleted.');
       } else {
-        this.flash('Failed to delete schedule', true);
+        this.flash('Failed to delete scheduler', true);
       }
-    },
-    intervalLabel(sec) {
-      if (sec % 3600 === 0) return sec / 3600 + 'h';
-      if (sec % 60 === 0) return sec / 60 + 'm';
-      return sec + 's';
     },
 
     // ---- Resolver enable/disable ----
