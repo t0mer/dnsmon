@@ -1,0 +1,21 @@
+services:
+  dnsmon:
+    image: techblog/dnsmon:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      # Server port (Docker/PaaS convention).
+      PORT: "8080"
+      # SQLite by default; data persists in the named volume.
+      DNSMON_STORAGE_DRIVER: "sqlite"
+      DNSMON_STORAGE_DSN: "file:/data/dnsmon.db?cache=shared&_fk=1"
+      DNSMON_LOG_FORMAT: "json"
+    volumes:
+      - dnsmondata:/data
+    restart: unless-stopped
+
+volumes:
+  dnsmondata:
