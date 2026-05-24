@@ -66,6 +66,55 @@ type Schedule struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
+// Monitor type identifiers.
+const (
+	// MonitorPropagation alerts when a record has not propagated to the expected
+	// value across resolvers.
+	MonitorPropagation = "propagation"
+	// MonitorChange alerts when a record's value drifts from a stored baseline.
+	MonitorChange = "change"
+)
+
+// Monitor event statuses recorded in the changelog.
+const (
+	MonitorStatusCreated       = "created"
+	MonitorStatusOK            = "ok"             // propagated / unchanged
+	MonitorStatusNotPropagated = "not_propagated" // propagation monitor: expected value missing somewhere
+	MonitorStatusChanged       = "changed"        // change monitor: value drifted from baseline
+	MonitorStatusError         = "error"
+)
+
+// Monitor watches a record and notifies on a propagation failure or an
+// unexpected change. It runs whenever its bound Schedule fires (execution is
+// implemented in a later change).
+type Monitor struct {
+	ID         string   `json:"id"`
+	Name       string   `json:"name"`
+	Type       string   `json:"type"` // MonitorPropagation | MonitorChange
+	FQDN       string   `json:"fqdn"`
+	RecordType string   `json:"record_type"`
+	// Expected holds the values the record should resolve to: the required
+	// values for a propagation monitor, or the current baseline for a change
+	// monitor (updated to the new value after an alert).
+	Expected    []string  `json:"expected"`
+	SchedulerID string    `json:"scheduler_id"`
+	ChannelID   string    `json:"channel_id"`
+	Enabled     bool      `json:"enabled"`
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
+}
+
+// MonitorEvent is a single entry in a monitor's changelog.
+type MonitorEvent struct {
+	ID        string    `json:"id"`
+	MonitorID string    `json:"monitor_id"`
+	Timestamp time.Time `json:"timestamp"`
+	Status    string    `json:"status"`
+	Observed  []string  `json:"observed"`
+	Message   string    `json:"message"`
+	Notified  bool      `json:"notified"`
+}
+
 // Default returns an empty Settings with sensible zero values.
 func Default() *Settings {
 	return &Settings{

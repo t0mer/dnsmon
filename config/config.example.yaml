@@ -87,10 +87,12 @@ storage:
 ##############################################################################
 cache:
   # Cache driver. Options: memory | redis | none
+  # Default is "none": checks always query resolvers live so results are never
+  # stale. Monitors always run uncached regardless of this setting.
   # Env: DNSMON_CACHE_DRIVER
-  driver: "memory"
+  driver: "none"
 
-  # How long to cache a (name, type, resolver) response tuple.
+  # How long to cache a (name, type, resolver) response tuple (memory/redis only).
   # Env: DNSMON_CACHE_TTL
   ttl: 60s
 
