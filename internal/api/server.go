@@ -11,6 +11,7 @@ import (
 	v1 "github.com/t0mer/dnsmon/internal/api/v1"
 	"github.com/t0mer/dnsmon/internal/checker"
 	"github.com/t0mer/dnsmon/internal/config"
+	"github.com/t0mer/dnsmon/internal/monitor"
 	"github.com/t0mer/dnsmon/internal/notify"
 	"github.com/t0mer/dnsmon/internal/resolvers"
 	"github.com/t0mer/dnsmon/internal/storage"
@@ -150,6 +151,7 @@ func (s *Server) routes() {
 			r.Put("/settings/monitors/{id}", v1.UpdateMonitor(s.storage))
 			r.Delete("/settings/monitors/{id}", v1.DeleteMonitor(s.storage))
 			r.Get("/settings/monitors/{id}/history", v1.MonitorHistory(s.storage))
+			r.Post("/settings/monitors/{id}/run", v1.RunMonitor(monitor.New(s.checker, s.storage, notify.New())))
 		})
 	})
 

@@ -107,11 +107,11 @@ Persistent storage for check history and permalinks.
 
 ## cache
 
-Response caching to reduce redundant DNS queries for popular domains.
+Optional response caching. Disabled by default so every check queries resolvers live (DNS propagation/lookup accuracy depends on fresh answers). Monitors always run uncached regardless of this setting.
 
 | Option | Type | Default | Env Variable | Description |
 |---|---|---|---|---|
-| `driver` | string | `memory` | `DNSMON_CACHE_DRIVER` | Cache backend. Options: `memory` (in-process LRU, default), `redis` (shared cache for multi-replica deployments), `none` (disable caching). |
+| `driver` | string | `none` | `DNSMON_CACHE_DRIVER` | Cache backend. Options: `none` (default — no caching, always live), `memory` (in-process LRU), `redis` (shared cache for multi-replica deployments). |
 | `ttl` | duration | `60s` | `DNSMON_CACHE_TTL` | How long a cached `(name, type, resolver)` response is considered fresh. After expiry the next request triggers a fresh DNS query. |
 | `size` | int | `10000` | `DNSMON_CACHE_SIZE` | Maximum number of entries in the in-memory LRU cache. Only applies when `driver=memory`. When capacity is exceeded, least-recently-used entries are evicted. |
 | `redis_addr` | string | `` | `DNSMON_CACHE_REDIS_ADDR` | Redis server address. Only used when `driver=redis`. Format: `host:port`, e.g. `localhost:6379`. |

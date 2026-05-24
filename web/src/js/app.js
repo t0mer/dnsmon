@@ -546,10 +546,6 @@ function settingsApp() {
     monitorForm: { type: 'propagation', name: '', fqdn: '', record_type: 'A', expected: '', scheduler_id: '', channel_id: '', enabled: true },
     monitorEditId: '',
     showMonitorEditor: false,
-    newSchedulerOpen: false,
-    newSchedulerForm: { name: '', cadence: '@daily', cron: '' },
-    newChannelOpen: false,
-    newChannelForm: { type: 'shoutrrr', name: '', config: { url: '' } },
     historyMonitorId: '',
     historyEvents: [],
 
@@ -867,8 +863,6 @@ function settingsApp() {
     openAddMonitor() {
       this.monitorEditId = '';
       this.monitorForm = { type: 'propagation', name: '', fqdn: '', record_type: 'A', expected: '', scheduler_id: '', channel_id: '', enabled: true };
-      this.newSchedulerOpen = false;
-      this.newChannelOpen = false;
       this.showMonitorEditor = true;
     },
     openEditMonitor(m) {
@@ -883,8 +877,6 @@ function settingsApp() {
         channel_id: m.channel_id || '',
         enabled: m.enabled,
       };
-      this.newSchedulerOpen = false;
-      this.newChannelOpen = false;
       this.showMonitorEditor = true;
     },
     cancelMonitorEditor() {
@@ -940,6 +932,25 @@ function settingsApp() {
         this.flash('Failed to delete monitor', true);
       }
     },
+    async refreshMonitors() {
+      const resp = await fetch('/api/v1/settings/monitors');
+      if (resp.ok) this.monitors = await resp.json();
+    },
+    // Evaluate a monitor on demand and surface the result.
+    async runMonitor(id) {
+      const resp = await fetch('/api/v1/settings/monitors/' + id + '/run', { method: 'POST' });
+      if (this.unauthorized(resp)) return;
+      if (!resp.ok) {
+        const e = await resp.json().catch(() => ({}));
+        this.flash(e?.error?.message || 'Run failed', true);
+        return;
+      }
+      const ev = await resp.json();
+      const isAlert = ev.status === 'not_propagated' || ev.status === 'changed' || ev.status === 'error';
+      this.flash(`${ev.status}: ${ev.message}${ev.notified ? ' (notified)' : ''}`, isAlert);
+      await this.refreshMonitors();
+      if (this.historyMonitorId === id) await this.viewHistory(id);
+    },
     async viewHistory(id) {
       const resp = await fetch('/api/v1/settings/monitors/' + id + '/history');
       if (!resp.ok) { this.flash('Failed to load history', true); return; }
@@ -949,45 +960,6 @@ function settingsApp() {
     closeHistory() {
       this.historyMonitorId = '';
       this.historyEvents = [];
-    },
-
-    // Inline create of a scheduler from the monitor form.
-    async createInlineScheduler() {
-      const f = this.newSchedulerForm;
-      const cron = f.cadence === 'custom' ? f.cron.trim() : f.cadence;
-      if (!f.name.trim() || !cron) return;
-      const resp = await fetch('/api/v1/settings/schedules', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: f.name.trim(), cron, enabled: true }),
-      });
-      if (!resp.ok) { this.flash('Failed to create scheduler', true); return; }
-      const sc = await resp.json();
-      this.schedules.unshift(sc);
-      this.monitorForm.scheduler_id = sc.id;
-      this.newSchedulerForm = { name: '', cadence: '@daily', cron: '' };
-      this.newSchedulerOpen = false;
-      this.flash('Scheduler created.');
-    },
-
-    // Inline create of a notification channel from the monitor form.
-    channelDefaultsFor(type) {
-      return this.channelDefaults(type);
-    },
-    onNewChannelType() {
-      this.newChannelForm.config = this.channelDefaults(this.newChannelForm.type);
-    },
-    async createInlineChannel() {
-      const f = this.newChannelForm;
-      if (!f.name.trim()) { this.flash('Channel name is required.', true); return; }
-      // Channels persist as part of the settings document; append + save.
-      this.notifications.push({ id: '', type: f.type, name: f.name.trim(), enabled: true, config: { ...f.config } });
-      await this.saveSettings();
-      const created = this.notifications.find((c) => c.name === f.name.trim() && c.type === f.type && c.id);
-      if (created) this.monitorForm.channel_id = created.id;
-      this.newChannelForm = { type: 'shoutrrr', name: '', config: { url: '' } };
-      this.newChannelOpen = false;
-      this.flash('Channel created.');
     },
 
     // ---- Resolver enable/disable ----

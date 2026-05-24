@@ -5,7 +5,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/t0mer/dnsmon/internal/cache"
 	"github.com/t0mer/dnsmon/internal/dnsclient"
 )
 
@@ -64,10 +63,7 @@ func (c *Checker) Stream(ctx context.Context, req StreamRequest) (<-chan *dnscli
 				sem <- struct{}{}
 				defer func() { <-sem }()
 
-				cacheKey := cache.Key(resolver.ID, req.Name, req.Type)
-				result := c.queryWithCache(ctx, resolver, req.Name, req.Type)
-
-				_ = cacheKey
+				result := c.queryWithCache(ctx, resolver, req.Name, req.Type, false)
 
 				c.m.queryTotal.WithLabelValues(resolver.ID, result.Status).Inc()
 				c.m.queryDuration.WithLabelValues(resolver.ID, result.Status).
