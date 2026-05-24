@@ -2,6 +2,9 @@
   "name": "dnsmon-web",
   "version": "1.0.0",
   "private": true,
+  "scripts": {
+    "build": "tailwindcss -i src/css/tailwind.src.css -o dist/css/app.css --minify && mkdir -p dist/js && cp src/js/*.js dist/js/ && cp src/*.html dist/"
+  },
   "devDependencies": {
     "tailwindcss": "^3.4.0",
     "postcss": "^8.4.0",
