@@ -81,8 +81,8 @@ func TestScheduleCRUD(t *testing.T) {
 	s := newTestStore(t)
 
 	now := time.Now().UTC()
-	sc := &settings.Schedule{ID: "s1", Name: "watch example", Domain: "example.com", Type: "A",
-		IntervalSec: 300, Enabled: true, CreatedAt: now, UpdatedAt: now}
+	sc := &settings.Schedule{ID: "s1", Name: "hourly", Cron: "@hourly",
+		Enabled: true, CreatedAt: now, UpdatedAt: now}
 	if err := s.SaveSchedule(ctx, sc); err != nil {
 		t.Fatalf("SaveSchedule: %v", err)
 	}
