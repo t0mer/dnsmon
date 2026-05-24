@@ -1,7 +1,7 @@
 .PHONY: build dev test test-integration lint ui ui-watch docker release clean
 
-BINARY      := bin/gdns
-MODULE      := github.com/tomerklein/gdns
+BINARY      := bin/dnsmon
+MODULE      := github.com/t0mer/dnsmon
 VERSION     := $(shell git describe --tags --always --dirty 2>/dev/null || echo "dev")
 COMMIT      := $(shell git rev-parse --short HEAD 2>/dev/null || echo "none")
 DATE        := $(shell date -u +%Y-%m-%dT%H:%M:%SZ)
@@ -11,7 +11,7 @@ LDFLAGS     := -s -w \
                -X $(MODULE)/internal/version.Date=$(DATE)
 
 build: ui
-	CGO_ENABLED=0 go build -trimpath -ldflags="$(LDFLAGS)" -o $(BINARY) ./cmd/gdns
+	CGO_ENABLED=0 go build -trimpath -ldflags="$(LDFLAGS)" -o $(BINARY) ./cmd/dnsmon
 
 dev:
 	@which air > /dev/null || go install github.com/air-verse/air@latest
@@ -37,13 +37,13 @@ ui-watch:
 	cd web && npx tailwindcss -i src/css/tailwind.src.css -o dist/css/app.css --watch
 
 docker:
-	docker build -f deploy/Dockerfile -t gdns:latest .
+	docker build -t dnsmon:latest .
 
 docker-compose-up:
-	docker compose -f deploy/docker-compose.yml up -d
+	docker compose up -d
 
 release:
-	goreleaser release --clean
+	BUILD_MODE=prod VERSION=$(VERSION) bash scripts/build.sh
 
 clean:
 	rm -rf $(BINARY) web/dist/css/app.css web/dist/*.html web/dist/js
