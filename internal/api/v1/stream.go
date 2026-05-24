@@ -46,24 +46,36 @@ func StreamCheck(chkr *checker.Checker) http.HandlerFunc {
 		}
 		defer conn.CloseNow()
 
-		ctx := conn.CloseRead(r.Context())
-
+		// Read the request frame first, then switch to read-close so a client
+		// disconnect cancels the stream (CloseRead would otherwise consume the
+		// request frame and close the connection before we read it).
 		var req wsStreamRequest
-		if err := wsjson.Read(ctx, conn, &req); err != nil {
-			sendWSError(ctx, conn, apierr.ErrCodeInvalidInput, "Failed to read request.")
+		if err := wsjson.Read(r.Context(), conn, &req); err != nil {
+			sendWSError(r.Context(), conn, apierr.ErrCodeInvalidInput, "Failed to read request.")
 			return
 		}
 
 		if req.Name == "" || req.Type == "" {
-			sendWSError(ctx, conn, apierr.ErrCodeInvalidInput, "name and type are required.")
+			sendWSError(r.Context(), conn, apierr.ErrCodeInvalidInput, "name and type are required.")
 			return
 		}
 
-		resultCh, doneCh := chkr.Stream(ctx, checker.StreamRequest{
+		ctx := conn.CloseRead(r.Context())
+
+		total, id, resultCh, doneCh, err := chkr.Stream(ctx, checker.StreamRequest{
 			Name:        req.Name,
 			Type:        req.Type,
 			ResolverIDs: req.Resolvers,
-		})
+		}, true)
+		if err != nil {
+			sendWSError(ctx, conn, apierr.ErrCodeInvalidInput, err.Error())
+			return
+		}
+
+		// Announce the resolver count up front so the client can show progress.
+		if err := wsjson.Write(ctx, conn, wsMessage{Type: "total", Data: map[string]int{"total": total}}); err != nil {
+			return
+		}
 
 		for result := range resultCh {
 			msg := wsMessage{Type: "result", Data: result}
@@ -73,7 +85,6 @@ func StreamCheck(chkr *checker.Checker) http.HandlerFunc {
 		}
 
 		if summary, ok := <-doneCh; ok && summary != nil {
-			id := checker.NewID(req.Name, req.Type)
 			msg := wsMessage{
 				Type: "done",
 				Data: wsDoneData{Summary: *summary, ID: id},
