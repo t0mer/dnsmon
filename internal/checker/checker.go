@@ -119,7 +119,7 @@ func (c *Checker) Check(ctx context.Context, req CheckRequest) (*dnsclient.Check
 		return nil, err
 	}
 
-	resolverList, err := c.buildResolverList(req)
+	resolverList, err := c.buildResolverList(ctx, req)
 	if err != nil {
 		return nil, err
 	}
@@ -164,6 +164,9 @@ func (c *Checker) Lookup(ctx context.Context, req LookupRequest) (*dnsclient.Res
 	if req.Resolver == "" {
 		resolver = dnsclient.Resolver{ID: "custom", Name: "Custom", IP: "8.8.8.8", Port: 53, Protocol: "udp"}
 	} else if r, ok := c.registry.Get(req.Resolver); ok {
+		if _, off := c.disabledResolverSet(ctx)[req.Resolver]; off {
+			return nil, fmt.Errorf("resolver is disabled: %s", req.Resolver)
+		}
 		resolver = r
 	} else {
 		resolver = dnsclient.Resolver{
@@ -186,11 +189,16 @@ func (c *Checker) Lookup(ctx context.Context, req LookupRequest) (*dnsclient.Res
 	return result, nil
 }
 
-func (c *Checker) buildResolverList(req CheckRequest) ([]dnsclient.Resolver, error) {
+func (c *Checker) buildResolverList(ctx context.Context, req CheckRequest) ([]dnsclient.Resolver, error) {
+	disabled := c.disabledResolverSet(ctx)
+
 	var list []dnsclient.Resolver
 
 	if len(req.ResolverIDs) > 0 {
 		for _, id := range req.ResolverIDs {
+			if _, off := disabled[id]; off {
+				continue
+			}
 			r, ok := c.registry.Get(id)
 			if !ok {
 				return nil, fmt.Errorf("resolver not found: %s", id)
@@ -198,9 +206,15 @@ func (c *Checker) buildResolverList(req CheckRequest) ([]dnsclient.Resolver, err
 			list = append(list, r)
 		}
 	} else {
-		list = c.registry.All()
+		for _, r := range c.registry.All() {
+			if _, off := disabled[r.ID]; off {
+				continue
+			}
+			list = append(list, r)
+		}
 	}
 
+	// Custom (ad-hoc) resolvers are not subject to the disabled list.
 	list = append(list, req.CustomResolvers...)
 
 	if len(list) > maxResolvers {
@@ -208,6 +222,23 @@ func (c *Checker) buildResolverList(req CheckRequest) ([]dnsclient.Resolver, err
 	}
 
 	return list, nil
+}
+
+// disabledResolverSet returns the set of resolver IDs the operator has disabled
+// in settings. It fails open (empty set) if settings cannot be read.
+func (c *Checker) disabledResolverSet(ctx context.Context) map[string]struct{} {
+	set := make(map[string]struct{})
+	if c.storage == nil {
+		return set
+	}
+	s, err := c.storage.GetSettings(ctx)
+	if err != nil || s == nil {
+		return set
+	}
+	for _, id := range s.DisabledResolvers {
+		set[id] = struct{}{}
+	}
+	return set
 }
 
 func (c *Checker) fanOut(ctx context.Context, name, qtype string, resolverList []dnsclient.Resolver) []dnsclient.ResolverResult {
