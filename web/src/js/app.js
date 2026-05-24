@@ -623,7 +623,7 @@ function settingsApp() {
     // ---- Notification channels ----
     channelDefaults(type) {
       if (type === 'shoutrrr') return { url: '' };
-      if (type === 'greenapi') return { instance_id: '', token: '', recipient: '' };
+      if (type === 'greenapi') return { instance_id: '', token: '', recipient: '', api_url: '' };
       if (type === 'gowa') return { base_url: '', username: '', password: '', recipient: '' };
       return {};
     },
@@ -642,6 +642,7 @@ function settingsApp() {
         username: 'Username',
         password: 'Password',
         recipient: 'Recipient',
+        api_url: 'API URL (optional)',
       }[field] || field;
     },
 

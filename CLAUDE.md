@@ -45,6 +45,7 @@ The goal: **deploy with one `docker compose up` and have a private whatsmydns in
 | Testing              | stdlib `testing` + `stretchr/testify`              | Unit + integration; DNS mocked with `miekg/dns` test server.            |
 | Linting              | `golangci-lint`                                    | Config in `.golangci.yml`.                                              |
 | Service mgmt         | `github.com/kardianos/service`                     | `--service install/uninstall` registers dnsmon as a Windows SCM / systemd / launchd service. Speaks the Windows Service Control Manager protocol so the binary runs correctly under SCM; hand-rolling this per-OS would be far more code. |
+| Notifications        | `github.com/containrrr/shoutrrr`                   | Generic notification channel (Slack, Telegram, Discord, email, etc.) via a single URL. WhatsApp (GreenAPI, go-whatsapp-web-multidevice) is called directly over REST with net/http — no extra deps. |
 
 **Do not introduce new dependencies without listing them here first and explaining the trade-off.**
 
