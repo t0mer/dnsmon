@@ -33,6 +33,14 @@ type Storage interface {
 	SaveSchedule(ctx context.Context, s *settings.Schedule) error
 	DeleteSchedule(ctx context.Context, id string) error
 
+	// Monitors and their changelog.
+	ListMonitors(ctx context.Context) ([]*settings.Monitor, error)
+	GetMonitor(ctx context.Context, id string) (*settings.Monitor, error)
+	SaveMonitor(ctx context.Context, m *settings.Monitor) error
+	DeleteMonitor(ctx context.Context, id string) error
+	ListMonitorEvents(ctx context.Context, monitorID string, limit int) ([]*settings.MonitorEvent, error)
+	AppendMonitorEvent(ctx context.Context, e *settings.MonitorEvent) error
+
 	Close() error
 }
 
@@ -70,5 +78,21 @@ func (n *Noop) ListSchedules(_ context.Context) ([]*settings.Schedule, error) { 
 func (n *Noop) SaveSchedule(_ context.Context, _ *settings.Schedule) error { return nil }
 
 func (n *Noop) DeleteSchedule(_ context.Context, _ string) error { return nil }
+
+func (n *Noop) ListMonitors(_ context.Context) ([]*settings.Monitor, error) { return nil, nil }
+
+func (n *Noop) GetMonitor(_ context.Context, _ string) (*settings.Monitor, error) {
+	return nil, ErrNotFound
+}
+
+func (n *Noop) SaveMonitor(_ context.Context, _ *settings.Monitor) error { return nil }
+
+func (n *Noop) DeleteMonitor(_ context.Context, _ string) error { return nil }
+
+func (n *Noop) ListMonitorEvents(_ context.Context, _ string, _ int) ([]*settings.MonitorEvent, error) {
+	return nil, nil
+}
+
+func (n *Noop) AppendMonitorEvent(_ context.Context, _ *settings.MonitorEvent) error { return nil }
 
 func (n *Noop) Close() error { return nil }

@@ -73,6 +73,7 @@
         {k:'tokens', l:'API Tokens'},
         {k:'resolvers', l:'Resolvers'},
         {k:'schedules', l:'Schedulers'},
+        {k:'monitors', l:'Monitors'},
       ]" :key="tab.k">
         <button @click="activeTab = tab.k"
           class="px-3 py-2 text-sm font-medium -mb-px border-b-2 transition-colors"
@@ -332,6 +333,202 @@
           </table>
         </div>
         <p class="text-xs text-slate-400 dark:text-slate-500">Schedule execution and attaching monitors are added in a later release; this manages the schedule definitions.</p>
+      </section>
+
+      <!-- ============ MONITORS ============ -->
+      <section x-show="activeTab === 'monitors'" class="space-y-4">
+        <div class="flex items-center justify-between">
+          <h2 class="font-semibold text-slate-900 dark:text-white text-sm">Monitors</h2>
+          <button @click="openAddMonitor()" x-show="!showMonitorEditor" class="btn bg-indigo-600 hover:bg-indigo-700 text-white">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+            Add
+          </button>
+        </div>
+        <p class="text-sm text-slate-500 dark:text-slate-400">
+          Watch a record and get notified on a propagation failure or an unexpected change. Each monitor runs on its bound schedule (execution is added in a later release).
+        </p>
+
+        <!-- Add / edit monitor editor -->
+        <div x-show="showMonitorEditor" class="card card-body space-y-3">
+          <h3 class="text-sm font-semibold text-slate-700 dark:text-slate-300" x-text="monitorEditId ? 'Edit monitor' : 'Add monitor'"></h3>
+
+          <div class="grid sm:grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Monitor type</label>
+              <select x-model="monitorForm.type" class="input">
+                <option value="propagation">Propagation monitoring</option>
+                <option value="change">Change detection</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Name</label>
+              <input type="text" x-model="monitorForm.name" class="input" placeholder="defaults to the FQDN" />
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">FQDN</label>
+              <input type="text" x-model="monitorForm.fqdn" class="input" placeholder="example.com" />
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Record type</label>
+              <select x-model="monitorForm.record_type" class="input">
+                <template x-for="t in ['A','AAAA','CNAME','MX','NS','TXT','CAA','SRV','SOA','PTR']" :key="t">
+                  <option x-text="t"></option>
+                </template>
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">
+              <span x-text="monitorForm.type === 'propagation' ? 'Expected value(s)' : 'Baseline value(s)'"></span>
+              <span class="text-slate-400">— one per line</span>
+            </label>
+            <textarea x-model="monitorForm.expected" rows="3" class="input font-mono text-xs" placeholder="93.184.216.34"></textarea>
+            <p x-show="monitorForm.type === 'change'" class="text-xs text-slate-400 dark:text-slate-500 mt-1">Leave empty to capture the baseline on the first run.</p>
+          </div>
+
+          <!-- Scheduler binding -->
+          <div>
+            <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Schedule</label>
+            <div class="flex items-center gap-2">
+              <select x-model="monitorForm.scheduler_id" class="input">
+                <option value="">— none —</option>
+                <template x-for="s in schedules" :key="s.id">
+                  <option :value="s.id" x-text="s.name + ' (' + s.cron + ')'"></option>
+                </template>
+              </select>
+              <button type="button" @click="newSchedulerOpen = !newSchedulerOpen" class="btn-sm ring-1 ring-slate-200 dark:ring-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 whitespace-nowrap">+ New</button>
+            </div>
+            <div x-show="newSchedulerOpen" class="mt-2 p-3 rounded-lg bg-slate-50 dark:bg-slate-800/40 flex flex-wrap items-end gap-2">
+              <div class="flex-1 min-w-[8rem]">
+                <label class="block text-xs text-slate-500 mb-1">Name</label>
+                <input type="text" x-model="newSchedulerForm.name" class="input-sm" placeholder="Hourly checks" />
+              </div>
+              <div>
+                <label class="block text-xs text-slate-500 mb-1">Cadence</label>
+                <select x-model="newSchedulerForm.cadence" class="input-sm">
+                  <option value="@hourly">Hourly</option>
+                  <option value="@daily">Daily</option>
+                  <option value="@weekly">Weekly</option>
+                  <option value="@monthly">Monthly</option>
+                  <option value="custom">Custom</option>
+                </select>
+              </div>
+              <input x-show="newSchedulerForm.cadence === 'custom'" type="text" x-model="newSchedulerForm.cron" class="input-sm font-mono" placeholder="*/15 * * * *" />
+              <button type="button" @click="createInlineScheduler()" class="btn-sm bg-indigo-600 text-white">Create</button>
+            </div>
+          </div>
+
+          <!-- Channel binding -->
+          <div>
+            <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Notification channel</label>
+            <div class="flex items-center gap-2">
+              <select x-model="monitorForm.channel_id" class="input">
+                <option value="">— none —</option>
+                <template x-for="c in notifications" :key="c.id">
+                  <option :value="c.id" x-text="(c.name || '(unnamed)') + ' · ' + channelTypeLabel(c.type)"></option>
+                </template>
+              </select>
+              <button type="button" @click="newChannelOpen = !newChannelOpen" class="btn-sm ring-1 ring-slate-200 dark:ring-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 whitespace-nowrap">+ New</button>
+            </div>
+            <div x-show="newChannelOpen" class="mt-2 p-3 rounded-lg bg-slate-50 dark:bg-slate-800/40 space-y-2">
+              <div class="grid sm:grid-cols-2 gap-2">
+                <div>
+                  <label class="block text-xs text-slate-500 mb-1">Type</label>
+                  <select x-model="newChannelForm.type" @change="onNewChannelType()" class="input-sm">
+                    <option value="shoutrrr">Shoutrrr</option>
+                    <option value="greenapi">WhatsApp (GreenAPI)</option>
+                    <option value="gowa">WhatsApp (go-whatsapp-web)</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-xs text-slate-500 mb-1">Name</label>
+                  <input type="text" x-model="newChannelForm.name" class="input-sm" placeholder="Ops alerts" />
+                </div>
+              </div>
+              <template x-for="field in channelFields(newChannelForm.type)" :key="field">
+                <div>
+                  <label class="block text-xs text-slate-500 mb-1" x-text="fieldLabel(field)"></label>
+                  <input :type="field.includes('password') || field === 'token' ? 'password' : 'text'" x-model="newChannelForm.config[field]" class="input-sm font-mono" autocomplete="off" />
+                </div>
+              </template>
+              <button type="button" @click="createInlineChannel()" class="btn-sm bg-indigo-600 text-white">Create</button>
+            </div>
+          </div>
+
+          <label class="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
+            <input type="checkbox" x-model="monitorForm.enabled" class="rounded" /> Enabled
+          </label>
+
+          <div class="flex items-center gap-2 pt-1">
+            <button @click="saveMonitor()" class="btn bg-indigo-600 hover:bg-indigo-700 text-white">
+              <span x-text="monitorEditId ? 'Save changes' : 'Add monitor'"></span>
+            </button>
+            <button @click="cancelMonitorEditor()" class="btn-sm ring-1 ring-slate-200 dark:ring-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800">Cancel</button>
+          </div>
+        </div>
+
+        <!-- Monitor list -->
+        <p x-show="monitors.length === 0 && !showMonitorEditor" class="text-sm text-slate-400 dark:text-slate-500 py-4">No monitors yet.</p>
+        <div x-show="monitors.length > 0" class="card overflow-hidden">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="bg-slate-50/80 dark:bg-slate-800/40 text-xs text-slate-500 dark:text-slate-400">
+                <th class="text-left px-4 py-2.5 font-medium">Name</th>
+                <th class="text-left px-4 py-2.5 font-medium">Type</th>
+                <th class="text-left px-4 py-2.5 font-medium">Record</th>
+                <th class="text-left px-4 py-2.5 font-medium">Schedule</th>
+                <th class="text-left px-4 py-2.5 font-medium">Channel</th>
+                <th class="text-left px-4 py-2.5 font-medium">Status</th>
+                <th class="px-4 py-2.5"></th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 dark:divide-slate-800/60">
+              <template x-for="m in monitors" :key="m.id">
+                <tr>
+                  <td class="px-4 py-2.5 text-slate-900 dark:text-white" x-text="m.name"></td>
+                  <td class="px-4 py-2.5"><span class="badge-ok" x-text="monitorTypeLabel(m.type)"></span></td>
+                  <td class="px-4 py-2.5 font-mono text-xs"><span x-text="m.fqdn"></span> <span class="text-slate-400" x-text="m.record_type"></span></td>
+                  <td class="px-4 py-2.5 text-xs text-slate-500" x-text="schedulerName(m.scheduler_id)"></td>
+                  <td class="px-4 py-2.5 text-xs text-slate-500" x-text="channelName(m.channel_id)"></td>
+                  <td class="px-4 py-2.5"><span :class="m.enabled ? 'badge-ok' : 'badge-error'" x-text="m.enabled ? 'Enabled' : 'Disabled'"></span></td>
+                  <td class="px-4 py-2.5 text-right whitespace-nowrap">
+                    <button @click="viewHistory(m.id)" class="btn-sm ring-1 ring-slate-200 dark:ring-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800">History</button>
+                    <button @click="openEditMonitor(m)" class="btn-sm ring-1 ring-slate-200 dark:ring-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800">Edit</button>
+                    <button @click="deleteMonitor(m.id)" class="btn-sm text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30">Delete</button>
+                  </td>
+                </tr>
+              </template>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- History modal -->
+        <div x-show="historyMonitorId" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40" @click.self="closeHistory()">
+          <div class="card w-full max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
+            <div class="px-4 py-3 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+              <h3 class="text-sm font-semibold text-slate-900 dark:text-white">Changelog</h3>
+              <button @click="closeHistory()" class="btn-sm ring-1 ring-slate-200 dark:ring-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800">Close</button>
+            </div>
+            <div class="overflow-y-auto">
+              <p x-show="historyEvents.length === 0" class="text-sm text-slate-400 dark:text-slate-500 p-4">No history yet.</p>
+              <table x-show="historyEvents.length > 0" class="w-full text-sm">
+                <tbody class="divide-y divide-slate-100 dark:divide-slate-800/60">
+                  <template x-for="e in historyEvents" :key="e.id">
+                    <tr>
+                      <td class="px-4 py-2.5 text-xs text-slate-400 whitespace-nowrap" x-text="new Date(e.timestamp).toLocaleString()"></td>
+                      <td class="px-4 py-2.5"><span class="badge-ok" x-text="e.status"></span></td>
+                      <td class="px-4 py-2.5 text-xs">
+                        <div class="text-slate-700 dark:text-slate-300" x-text="e.message"></div>
+                        <div class="font-mono text-slate-400" x-text="(e.observed || []).join(', ')"></div>
+                      </td>
+                    </tr>
+                  </template>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
       </section>
 
     </div>

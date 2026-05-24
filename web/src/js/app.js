@@ -261,6 +261,30 @@ function dnsmonApp() {
       });
     },
 
+    // Hand off the current check to the Settings → Monitors tab, prefilling the
+    // FQDN, record type, and the majority answer set (as expected / baseline).
+    createMonitor(monitorType) {
+      if (this.results.length === 0) return;
+      let expected = [];
+      if (this.summary && this.summary.consensus) {
+        let best = '';
+        let bestN = -1;
+        for (const [k, n] of Object.entries(this.summary.consensus)) {
+          if (n > bestN) { bestN = n; best = k; }
+        }
+        if (best && best !== '<empty>') {
+          expected = best.split(',').map((s) => s.trim()).filter(Boolean);
+        }
+      }
+      sessionStorage.setItem('dnsmon.newMonitor', JSON.stringify({
+        type: monitorType,
+        fqdn: this.domain.trim(),
+        record_type: this.type,
+        expected,
+      }));
+      window.location.href = '/settings?tab=monitors';
+    },
+
     // ---------------------------------------------------------------------------
     // Sorting
     // ---------------------------------------------------------------------------
@@ -517,11 +541,41 @@ function settingsApp() {
     resolvers: [],
     resolverQuery: '',
 
+    // Monitors
+    monitors: [],
+    monitorForm: { type: 'propagation', name: '', fqdn: '', record_type: 'A', expected: '', scheduler_id: '', channel_id: '', enabled: true },
+    monitorEditId: '',
+    showMonitorEditor: false,
+    newSchedulerOpen: false,
+    newSchedulerForm: { name: '', cadence: '@daily', cron: '' },
+    newChannelOpen: false,
+    newChannelForm: { type: 'shoutrrr', name: '', config: { url: '' } },
+    historyMonitorId: '',
+    historyEvents: [],
+
     // Session
     currentUser: '',
 
     async init() {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('tab')) this.activeTab = params.get('tab');
       await this.loadAll();
+
+      // Prefill the monitor form from a "Create monitor" handoff (home page).
+      const pending = sessionStorage.getItem('dnsmon.newMonitor');
+      if (pending) {
+        sessionStorage.removeItem('dnsmon.newMonitor');
+        try {
+          const d = JSON.parse(pending);
+          this.activeTab = 'monitors';
+          this.openAddMonitor();
+          this.monitorForm.type = d.type || 'propagation';
+          this.monitorForm.fqdn = d.fqdn || '';
+          this.monitorForm.name = d.fqdn || '';
+          this.monitorForm.record_type = d.record_type || 'A';
+          this.monitorForm.expected = (d.expected || []).join('\n');
+        } catch { /* ignore malformed handoff */ }
+      }
     },
 
     // unauthorized() returns true (and redirects to /login) if the response is a 401.
@@ -544,9 +598,10 @@ function settingsApp() {
           fetch('/api/v1/settings/tokens'),
           fetch('/api/v1/settings/schedules'),
           fetch('/api/v1/resolvers'),
+          fetch('/api/v1/settings/monitors'),
         ]);
         if (responses.some((r) => this.unauthorized(r))) return;
-        const [s, tk, sc, rs] = await Promise.all(responses.map((r) => r.json()));
+        const [s, tk, sc, rs, mon] = await Promise.all(responses.map((r) => r.json()));
         this.auth = {
           enabled: !!s.auth.enabled,
           username: s.auth.username || '',
@@ -558,6 +613,7 @@ function settingsApp() {
         this.tokens = tk || [];
         this.schedules = sc || [];
         this.resolvers = rs || [];
+        this.monitors = mon || [];
       } catch (e) {
         this.flash('Failed to load settings: ' + e.message, true);
       } finally {
@@ -794,6 +850,144 @@ function settingsApp() {
       } else {
         this.flash('Failed to delete scheduler', true);
       }
+    },
+
+    // ---- Monitors ----
+    monitorTypeLabel(type) {
+      return { propagation: 'Propagation', change: 'Change detection' }[type] || type;
+    },
+    schedulerName(id) {
+      const s = this.schedules.find((x) => x.id === id);
+      return s ? s.name : '—';
+    },
+    channelName(id) {
+      const c = this.notifications.find((x) => x.id === id);
+      return c ? c.name : '—';
+    },
+    openAddMonitor() {
+      this.monitorEditId = '';
+      this.monitorForm = { type: 'propagation', name: '', fqdn: '', record_type: 'A', expected: '', scheduler_id: '', channel_id: '', enabled: true };
+      this.newSchedulerOpen = false;
+      this.newChannelOpen = false;
+      this.showMonitorEditor = true;
+    },
+    openEditMonitor(m) {
+      this.monitorEditId = m.id;
+      this.monitorForm = {
+        type: m.type,
+        name: m.name || '',
+        fqdn: m.fqdn,
+        record_type: m.record_type,
+        expected: (m.expected || []).join('\n'),
+        scheduler_id: m.scheduler_id || '',
+        channel_id: m.channel_id || '',
+        enabled: m.enabled,
+      };
+      this.newSchedulerOpen = false;
+      this.newChannelOpen = false;
+      this.showMonitorEditor = true;
+    },
+    cancelMonitorEditor() {
+      this.showMonitorEditor = false;
+    },
+    async saveMonitor() {
+      const f = this.monitorForm;
+      if (!f.fqdn.trim()) { this.flash('FQDN is required.', true); return; }
+      const expected = f.expected.split(/[\n,]+/).map((v) => v.trim()).filter(Boolean);
+      if (f.type === 'propagation' && expected.length === 0) {
+        this.flash('Propagation monitors need at least one expected value.', true);
+        return;
+      }
+      const editing = this.monitorEditId !== '';
+      const url = editing ? '/api/v1/settings/monitors/' + this.monitorEditId : '/api/v1/settings/monitors';
+      const resp = await fetch(url, {
+        method: editing ? 'PUT' : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: f.type,
+          name: f.name.trim(),
+          fqdn: f.fqdn.trim(),
+          record_type: f.record_type,
+          expected,
+          scheduler_id: f.scheduler_id,
+          channel_id: f.channel_id,
+          enabled: f.enabled,
+        }),
+      });
+      if (this.unauthorized(resp)) return;
+      if (!resp.ok) {
+        const e = await resp.json().catch(() => ({}));
+        this.flash(e?.error?.message || 'Failed to save monitor', true);
+        return;
+      }
+      const m = await resp.json();
+      if (editing) {
+        const i = this.monitors.findIndex((x) => x.id === m.id);
+        if (i !== -1) this.monitors[i] = m;
+        this.flash('Monitor updated.');
+      } else {
+        this.monitors.unshift(m);
+        this.flash('Monitor created.');
+      }
+      this.showMonitorEditor = false;
+    },
+    async deleteMonitor(id) {
+      const resp = await fetch('/api/v1/settings/monitors/' + id, { method: 'DELETE' });
+      if (resp.ok || resp.status === 204) {
+        this.monitors = this.monitors.filter((m) => m.id !== id);
+        this.flash('Monitor deleted.');
+      } else {
+        this.flash('Failed to delete monitor', true);
+      }
+    },
+    async viewHistory(id) {
+      const resp = await fetch('/api/v1/settings/monitors/' + id + '/history');
+      if (!resp.ok) { this.flash('Failed to load history', true); return; }
+      this.historyEvents = await resp.json();
+      this.historyMonitorId = id;
+    },
+    closeHistory() {
+      this.historyMonitorId = '';
+      this.historyEvents = [];
+    },
+
+    // Inline create of a scheduler from the monitor form.
+    async createInlineScheduler() {
+      const f = this.newSchedulerForm;
+      const cron = f.cadence === 'custom' ? f.cron.trim() : f.cadence;
+      if (!f.name.trim() || !cron) return;
+      const resp = await fetch('/api/v1/settings/schedules', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: f.name.trim(), cron, enabled: true }),
+      });
+      if (!resp.ok) { this.flash('Failed to create scheduler', true); return; }
+      const sc = await resp.json();
+      this.schedules.unshift(sc);
+      this.monitorForm.scheduler_id = sc.id;
+      this.newSchedulerForm = { name: '', cadence: '@daily', cron: '' };
+      this.newSchedulerOpen = false;
+      this.flash('Scheduler created.');
+    },
+
+    // Inline create of a notification channel from the monitor form.
+    channelDefaultsFor(type) {
+      return this.channelDefaults(type);
+    },
+    onNewChannelType() {
+      this.newChannelForm.config = this.channelDefaults(this.newChannelForm.type);
+    },
+    async createInlineChannel() {
+      const f = this.newChannelForm;
+      if (!f.name.trim()) { this.flash('Channel name is required.', true); return; }
+      // Channels persist as part of the settings document; append + save.
+      this.notifications.push({ id: '', type: f.type, name: f.name.trim(), enabled: true, config: { ...f.config } });
+      await this.saveSettings();
+      const created = this.notifications.find((c) => c.name === f.name.trim() && c.type === f.type && c.id);
+      if (created) this.monitorForm.channel_id = created.id;
+      this.newChannelForm = { type: 'shoutrrr', name: '', config: { url: '' } };
+      this.newChannelOpen = false;
+      this.flash('Channel created.');
     },
 
     // ---- Resolver enable/disable ----
