@@ -20,6 +20,127 @@ components:
       bearerFormat: API key
 
   schemas:
+    SessionStatus:
+      type: object
+      properties:
+        enabled:
+          type: boolean
+          description: Whether UI authentication is enabled.
+        authenticated:
+          type: boolean
+        username:
+          type: string
+
+    NotificationChannel:
+      type: object
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+          enum: [shoutrrr, greenapi, gowa]
+        name:
+          type: string
+        enabled:
+          type: boolean
+        config:
+          type: object
+          additionalProperties:
+            type: string
+
+    SettingsView:
+      type: object
+      properties:
+        auth:
+          type: object
+          properties:
+            enabled:
+              type: boolean
+            username:
+              type: string
+            password_set:
+              type: boolean
+        notifications:
+          type: array
+          items:
+            $ref: '#/components/schemas/NotificationChannel'
+        disabled_resolvers:
+          type: array
+          items:
+            type: string
+
+    SettingsUpdate:
+      type: object
+      properties:
+        auth:
+          type: object
+          properties:
+            enabled:
+              type: boolean
+            username:
+              type: string
+            password:
+              type: string
+              description: Set to change the admin password; omit or leave empty to keep the current one.
+        notifications:
+          type: array
+          items:
+            $ref: '#/components/schemas/NotificationChannel'
+        disabled_resolvers:
+          type: array
+          items:
+            type: string
+
+    APIToken:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        prefix:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        last_used_at:
+          type: string
+          format: date-time
+          nullable: true
+
+    ScheduleInput:
+      type: object
+      required: [name, domain, type]
+      properties:
+        name:
+          type: string
+        domain:
+          type: string
+        type:
+          type: string
+        resolvers:
+          type: array
+          items:
+            type: string
+        interval_sec:
+          type: integer
+        enabled:
+          type: boolean
+
+    Schedule:
+      allOf:
+        - $ref: '#/components/schemas/ScheduleInput'
+        - type: object
+          properties:
+            id:
+              type: string
+            created_at:
+              type: string
+              format: date-time
+            updated_at:
+              type: string
+              format: date-time
+
     Answer:
       type: object
       properties:
@@ -517,3 +638,245 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/login:
+    post:
+      summary: Sign in to the UI
+      description: Verifies the admin credentials (when auth is enabled) and sets an HttpOnly session cookie.
+      operationId: login
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [username, password]
+              properties:
+                username:
+                  type: string
+                password:
+                  type: string
+      responses:
+        '200':
+          description: Authenticated; session cookie set
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionStatus'
+        '401':
+          description: Invalid username or password
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/logout:
+    post:
+      summary: Sign out
+      operationId: logout
+      tags: [Auth]
+      responses:
+        '200':
+          description: Session cookie cleared
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionStatus'
+
+  /auth/session:
+    get:
+      summary: Current session status
+      operationId: authSession
+      tags: [Auth]
+      responses:
+        '200':
+          description: Whether auth is enabled and whether the caller is authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionStatus'
+
+  /settings:
+    get:
+      summary: Get application settings
+      description: Returns settings with secrets redacted (the admin password is never returned; only whether one is set).
+      operationId: getSettings
+      tags: [Settings]
+      responses:
+        '200':
+          description: Current settings
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SettingsView'
+    put:
+      summary: Update application settings
+      description: Updates auth (optional UI login), notification channels, and the set of disabled resolver IDs. Provide `auth.password` only to change it.
+      operationId: updateSettings
+      tags: [Settings]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SettingsUpdate'
+      responses:
+        '200':
+          description: Updated settings
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SettingsView'
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /settings/notifications/test:
+    post:
+      summary: Send a test notification (not implemented yet)
+      operationId: testNotification
+      tags: [Settings]
+      responses:
+        '501':
+          description: Not implemented
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /settings/tokens:
+    get:
+      summary: List API tokens
+      operationId: listTokens
+      tags: [Settings]
+      responses:
+        '200':
+          description: API tokens (without secrets)
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/APIToken'
+    post:
+      summary: Create an API token
+      description: Returns the raw token once; only its hash is stored.
+      operationId: createToken
+      tags: [Settings]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name:
+                  type: string
+      responses:
+        '201':
+          description: Created token (raw secret included once)
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/APIToken'
+                  - type: object
+                    properties:
+                      token:
+                        type: string
+
+  /settings/tokens/{id}:
+    delete:
+      summary: Revoke an API token
+      operationId: deleteToken
+      tags: [Settings]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Deleted
+        '404':
+          description: Not found
+
+  /settings/schedules:
+    get:
+      summary: List monitoring schedules
+      operationId: listSchedules
+      tags: [Settings]
+      responses:
+        '200':
+          description: Schedules
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Schedule'
+    post:
+      summary: Create a monitoring schedule
+      operationId: createSchedule
+      tags: [Settings]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ScheduleInput'
+      responses:
+        '201':
+          description: Created schedule
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Schedule'
+
+  /settings/schedules/{id}:
+    put:
+      summary: Update a monitoring schedule
+      operationId: updateSchedule
+      tags: [Settings]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ScheduleInput'
+      responses:
+        '200':
+          description: Updated schedule
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Schedule'
+        '404':
+          description: Not found
+    delete:
+      summary: Delete a monitoring schedule
+      operationId: deleteSchedule
+      tags: [Settings]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Deleted
+        '404':
+          description: Not found
