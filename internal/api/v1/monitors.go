@@ -11,6 +11,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/t0mer/dnsmon/internal/api/apierr"
 	"github.com/t0mer/dnsmon/internal/dnsclient"
+	"github.com/t0mer/dnsmon/internal/monitor"
 	"github.com/t0mer/dnsmon/internal/settings"
 	"github.com/t0mer/dnsmon/internal/storage"
 )
@@ -184,6 +185,24 @@ func DeleteMonitor(store storage.Storage) http.HandlerFunc {
 			return
 		}
 		w.WriteHeader(http.StatusNoContent)
+	}
+}
+
+// RunMonitor handles POST /api/v1/settings/monitors/{id}/run. It evaluates the
+// monitor immediately and returns the resulting changelog event.
+func RunMonitor(eval *monitor.Evaluator) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		id := chi.URLParam(r, "id")
+		event, err := eval.RunByID(r.Context(), id)
+		if err != nil {
+			if errors.Is(err, storage.ErrNotFound) {
+				apierr.WriteError(w, r, http.StatusNotFound, apierr.ErrCodeNotFound, "Monitor not found.", nil)
+				return
+			}
+			apierr.WriteError(w, r, http.StatusInternalServerError, apierr.ErrCodeInternal, "Failed to run monitor.", nil)
+			return
+		}
+		apierr.WriteJSON(w, http.StatusOK, event)
 	}
 }
 

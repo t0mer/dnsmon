@@ -390,70 +390,25 @@
           <!-- Scheduler binding -->
           <div>
             <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Schedule</label>
-            <div class="flex items-center gap-2">
-              <select x-model="monitorForm.scheduler_id" class="input">
-                <option value="">— none —</option>
-                <template x-for="s in schedules" :key="s.id">
-                  <option :value="s.id" x-text="s.name + ' (' + s.cron + ')'"></option>
-                </template>
-              </select>
-              <button type="button" @click="newSchedulerOpen = !newSchedulerOpen" class="btn-sm ring-1 ring-slate-200 dark:ring-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 whitespace-nowrap">+ New</button>
-            </div>
-            <div x-show="newSchedulerOpen" class="mt-2 p-3 rounded-lg bg-slate-50 dark:bg-slate-800/40 flex flex-wrap items-end gap-2">
-              <div class="flex-1 min-w-[8rem]">
-                <label class="block text-xs text-slate-500 mb-1">Name</label>
-                <input type="text" x-model="newSchedulerForm.name" class="input-sm" placeholder="Hourly checks" />
-              </div>
-              <div>
-                <label class="block text-xs text-slate-500 mb-1">Cadence</label>
-                <select x-model="newSchedulerForm.cadence" class="input-sm">
-                  <option value="@hourly">Hourly</option>
-                  <option value="@daily">Daily</option>
-                  <option value="@weekly">Weekly</option>
-                  <option value="@monthly">Monthly</option>
-                  <option value="custom">Custom</option>
-                </select>
-              </div>
-              <input x-show="newSchedulerForm.cadence === 'custom'" type="text" x-model="newSchedulerForm.cron" class="input-sm font-mono" placeholder="*/15 * * * *" />
-              <button type="button" @click="createInlineScheduler()" class="btn-sm bg-indigo-600 text-white">Create</button>
-            </div>
+            <select x-model="monitorForm.scheduler_id" class="input">
+              <option value="">— none —</option>
+              <template x-for="s in schedules" :key="s.id">
+                <option :value="s.id" x-text="s.name + ' (' + s.cron + ')'"></option>
+              </template>
+            </select>
+            <p x-show="schedules.length === 0" class="text-xs text-slate-400 dark:text-slate-500 mt-1">No schedulers yet — create one in the Schedulers tab.</p>
           </div>
 
           <!-- Channel binding -->
           <div>
             <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Notification channel</label>
-            <div class="flex items-center gap-2">
-              <select x-model="monitorForm.channel_id" class="input">
-                <option value="">— none —</option>
-                <template x-for="c in notifications" :key="c.id">
-                  <option :value="c.id" x-text="(c.name || '(unnamed)') + ' · ' + channelTypeLabel(c.type)"></option>
-                </template>
-              </select>
-              <button type="button" @click="newChannelOpen = !newChannelOpen" class="btn-sm ring-1 ring-slate-200 dark:ring-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 whitespace-nowrap">+ New</button>
-            </div>
-            <div x-show="newChannelOpen" class="mt-2 p-3 rounded-lg bg-slate-50 dark:bg-slate-800/40 space-y-2">
-              <div class="grid sm:grid-cols-2 gap-2">
-                <div>
-                  <label class="block text-xs text-slate-500 mb-1">Type</label>
-                  <select x-model="newChannelForm.type" @change="onNewChannelType()" class="input-sm">
-                    <option value="shoutrrr">Shoutrrr</option>
-                    <option value="greenapi">WhatsApp (GreenAPI)</option>
-                    <option value="gowa">WhatsApp (go-whatsapp-web)</option>
-                  </select>
-                </div>
-                <div>
-                  <label class="block text-xs text-slate-500 mb-1">Name</label>
-                  <input type="text" x-model="newChannelForm.name" class="input-sm" placeholder="Ops alerts" />
-                </div>
-              </div>
-              <template x-for="field in channelFields(newChannelForm.type)" :key="field">
-                <div>
-                  <label class="block text-xs text-slate-500 mb-1" x-text="fieldLabel(field)"></label>
-                  <input :type="field.includes('password') || field === 'token' ? 'password' : 'text'" x-model="newChannelForm.config[field]" class="input-sm font-mono" autocomplete="off" />
-                </div>
+            <select x-model="monitorForm.channel_id" class="input">
+              <option value="">— none —</option>
+              <template x-for="c in notifications" :key="c.id">
+                <option :value="c.id" x-text="(c.name || '(unnamed)') + ' · ' + channelTypeLabel(c.type)"></option>
               </template>
-              <button type="button" @click="createInlineChannel()" class="btn-sm bg-indigo-600 text-white">Create</button>
-            </div>
+            </select>
+            <p x-show="notifications.length === 0" class="text-xs text-slate-400 dark:text-slate-500 mt-1">No channels yet — create one in the Notifications tab.</p>
           </div>
 
           <label class="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
@@ -493,6 +448,7 @@
                   <td class="px-4 py-2.5 text-xs text-slate-500" x-text="channelName(m.channel_id)"></td>
                   <td class="px-4 py-2.5"><span :class="m.enabled ? 'badge-ok' : 'badge-error'" x-text="m.enabled ? 'Enabled' : 'Disabled'"></span></td>
                   <td class="px-4 py-2.5 text-right whitespace-nowrap">
+                    <button @click="runMonitor(m.id)" class="btn-sm bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-950/60">Run</button>
                     <button @click="viewHistory(m.id)" class="btn-sm ring-1 ring-slate-200 dark:ring-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800">History</button>
                     <button @click="openEditMonitor(m)" class="btn-sm ring-1 ring-slate-200 dark:ring-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800">Edit</button>
                     <button @click="deleteMonitor(m.id)" class="btn-sm text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30">Delete</button>

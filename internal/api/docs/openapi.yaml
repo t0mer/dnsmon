@@ -1064,3 +1064,25 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/MonitorEvent'
+
+  /settings/monitors/{id}/run:
+    post:
+      summary: Evaluate a monitor now
+      description: Runs the monitor immediately (propagation check or change comparison), records a changelog entry, and notifies the bound channel on an alert. Returns the resulting event.
+      operationId: runMonitor
+      tags: [Settings]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Evaluation result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MonitorEvent'
+        '404':
+          description: Not found
