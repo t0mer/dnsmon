@@ -1,6 +1,6 @@
 module github.com/t0mer/dnsmon
 
-go 1.25.0
+go 1.25.10
 
 require (
 	github.com/coder/websocket v1.8.14
@@ -15,10 +15,10 @@ require (
 	github.com/miekg/dns v1.1.62
 	github.com/oschwald/geoip2-golang v1.11.0
 	github.com/prometheus/client_golang v1.20.5
-	github.com/redis/go-redis/v9 v9.7.0
+	github.com/redis/go-redis/v9 v9.7.3
 	github.com/spf13/viper v1.19.0
 	github.com/stretchr/testify v1.9.0
-	golang.org/x/crypto v0.49.0
+	golang.org/x/crypto v0.50.0
 	modernc.org/sqlite v1.33.1
 )
 
@@ -65,12 +65,12 @@ require (
 	go.uber.org/multierr v1.9.0 // indirect
 	golang.org/x/exp v0.0.0-20231108232855-2478ac86f678 // indirect
 	golang.org/x/image v0.0.0-20190910094157-69e4b8554b2a // indirect
-	golang.org/x/mod v0.33.0 // indirect
-	golang.org/x/net v0.51.0 // indirect
+	golang.org/x/mod v0.34.0 // indirect
+	golang.org/x/net v0.53.0 // indirect
 	golang.org/x/sync v0.20.0 // indirect
-	golang.org/x/sys v0.42.0 // indirect
-	golang.org/x/text v0.35.0 // indirect
-	golang.org/x/tools v0.42.0 // indirect
+	golang.org/x/sys v0.43.0 // indirect
+	golang.org/x/text v0.36.0 // indirect
+	golang.org/x/tools v0.43.0 // indirect
 	google.golang.org/protobuf v1.34.2 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect

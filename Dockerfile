@@ -9,7 +9,7 @@ COPY web/ ./
 RUN npm run build
 
 # Stage 2: cross-compile the Go binary for the target platform.
-FROM --platform=$BUILDPLATFORM golang:1.25-alpine AS builder
+FROM --platform=$BUILDPLATFORM golang:1.25.10-alpine AS builder
 WORKDIR /app
 COPY go.mod go.sum ./
 RUN go mod download

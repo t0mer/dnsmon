@@ -1,6 +1,7 @@
 package v1
 
 import (
+	"log/slog"
 	"net/http"
 
 	"github.com/t0mer/dnsmon/internal/api/apierr"
@@ -18,9 +19,10 @@ func Readyz(store storage.Storage) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		_, err := store.ListChecks(r.Context(), 1, 0)
 		if err != nil {
+			slog.Default().ErrorContext(r.Context(), "readyz: storage check failed", slog.Any("error", err))
 			apierr.WriteJSON(w, http.StatusServiceUnavailable, map[string]string{
 				"status": "unavailable",
-				"error":  err.Error(),
+				"error":  "storage backend unavailable",
 			})
 			return
 		}

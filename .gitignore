@@ -29,3 +29,10 @@ web/dist/*
 
 # Project/agent instructions — kept local, not tracked
 CLAUDE.md
+
+# Environment variable files (may contain secrets)
+.env
+**/.env
+
+# Local security scan output
+scans/

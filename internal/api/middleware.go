@@ -134,11 +134,18 @@ func RequireAuth(store storage.Storage, apiMode bool) func(http.Handler) http.Ha
 	}
 }
 
-// CORS returns a middleware that adds permissive CORS headers for API routes.
-func CORS() func(http.Handler) http.Handler {
+// CORS returns a middleware that adds CORS headers for API routes. allowedOrigin
+// should be the server's base URL (e.g. "https://dnsmon.example.com"). When empty
+// it falls back to "*" so that unconfigured installs remain functional.
+func CORS(allowedOrigin string) func(http.Handler) http.Handler {
+	origin := allowedOrigin
+	if origin == "" {
+		origin = "*"
+	}
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			w.Header().Set("Access-Control-Allow-Origin", "*")
+			w.Header().Set("Access-Control-Allow-Origin", origin)
+			w.Header().Set("Vary", "Origin")
 			w.Header().Set("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS")
 			w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Request-ID")
 
@@ -146,6 +153,23 @@ func CORS() func(http.Handler) http.Handler {
 				w.WriteHeader(http.StatusNoContent)
 				return
 			}
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+
+// SecureHeaders returns a middleware that sets defensive HTTP response headers on
+// every response to reduce XSS, clickjacking, and MIME-sniffing attack surface.
+func SecureHeaders() func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			h := w.Header()
+			h.Set("Content-Security-Policy",
+				"default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'")
+			h.Set("X-Content-Type-Options", "nosniff")
+			h.Set("X-Frame-Options", "DENY")
+			h.Set("Referrer-Policy", "strict-origin-when-cross-origin")
+			h.Set("Permissions-Policy", "geolocation=(), camera=(), microphone=()")
 			next.ServeHTTP(w, r)
 		})
 	}
