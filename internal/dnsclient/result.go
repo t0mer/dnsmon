@@ -2,6 +2,28 @@ package dnsclient
 
 import "time"
 
+// TraceStep represents one delegation hop in an authoritative trace.
+type TraceStep struct {
+	Zone          string   `json:"zone"`
+	Nameserver    string   `json:"nameserver"`
+	IP            string   `json:"ip"`
+	QueryType     string   `json:"query_type"`
+	Answers       []Answer `json:"answers,omitempty"`
+	Authority     []Answer `json:"authority,omitempty"`
+	Additional    []Answer `json:"additional,omitempty"`
+	Authoritative bool     `json:"authoritative"`
+	DurationMS    int64    `json:"duration_ms"`
+	Status        string   `json:"status"`
+	Error         string   `json:"error,omitempty"`
+}
+
+// TraceResult is the full delegation chain for a name/type pair.
+type TraceResult struct {
+	Name  string      `json:"name"`
+	Type  string      `json:"type"`
+	Steps []TraceStep `json:"steps"`
+}
+
 const (
 	StatusOK       = "ok"
 	StatusNXDomain = "nxdomain"

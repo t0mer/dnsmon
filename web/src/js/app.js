@@ -1000,6 +1000,46 @@ function settingsApp() {
 }
 
 // ---------------------------------------------------------------------------
+// traceApp — Authoritative trace page (trace.html)
+// ---------------------------------------------------------------------------
+function traceApp() {
+  return {
+    domain: '',
+    type: 'A',
+    steps: [],
+    loading: false,
+    errorMsg: '',
+
+    async trace() {
+      if (!this.domain.trim()) return;
+      this.steps = [];
+      this.errorMsg = '';
+      this.loading = true;
+
+      try {
+        const resp = await fetch('/api/v1/trace', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: this.domain.trim(), type: this.type }),
+        });
+
+        if (!resp.ok) {
+          const err = await resp.json().catch(() => ({ error: { message: resp.statusText } }));
+          throw new Error(err?.error?.message || `HTTP ${resp.status}`);
+        }
+
+        const data = await resp.json();
+        this.steps = data.steps || [];
+      } catch (err) {
+        this.errorMsg = err.message;
+      } finally {
+        this.loading = false;
+      }
+    },
+  };
+}
+
+// ---------------------------------------------------------------------------
 // loginApp — Sign-in page (login.html)
 // ---------------------------------------------------------------------------
 function loginApp() {
@@ -1040,6 +1080,7 @@ document.addEventListener('alpine:init', () => {
   Alpine.data('dnsmonApp', dnsmonApp);
   Alpine.data('lookupApp', lookupApp);
   Alpine.data('reverseApp', reverseApp);
+  Alpine.data('traceApp', traceApp);
   Alpine.data('settingsApp', settingsApp);
   Alpine.data('loginApp', loginApp);
 });

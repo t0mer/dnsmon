@@ -83,6 +83,10 @@ func (s *Server) routes() {
 		r.URL.Path = "/reverse.html"
 		fileServer.ServeHTTP(w, r)
 	})
+	r.Get("/trace", func(w http.ResponseWriter, r *http.Request) {
+		r.URL.Path = "/trace.html"
+		fileServer.ServeHTTP(w, r)
+	})
 	r.Get("/about", func(w http.ResponseWriter, r *http.Request) {
 		r.URL.Path = "/about.html"
 		fileServer.ServeHTTP(w, r)
@@ -120,6 +124,7 @@ func (s *Server) routes() {
 
 		r.Post("/lookup", v1.PostLookup(s.checker))
 		r.Post("/reverse", v1.PostReverse(s.checker))
+		r.Post("/trace", v1.PostTrace(s.checker))
 
 		// Authentication (public so the login form can reach it)
 		r.Post("/auth/login", v1.Login(s.storage))
