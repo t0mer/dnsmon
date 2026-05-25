@@ -141,6 +141,28 @@
                 <span x-text="shareLabel"></span>
               </button>
 
+              <!-- Snapshot controls -->
+              <button type="button" x-show="results.length > 0 && !snapshot" @click="saveSnapshot()"
+                class="btn bg-white/10 hover:bg-white/20 text-white ring-1 ring-white/20"
+                aria-label="Save snapshot for diff comparison">
+                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                Snapshot
+              </button>
+              <template x-if="snapshot">
+                <div class="flex items-center gap-1">
+                  <span class="text-xs text-indigo-200">📸 <span x-text="snapshotTime"></span></span>
+                  <button type="button" @click="diffOnly = !diffOnly"
+                    class="btn text-xs ring-1 ring-white/20"
+                    :class="diffOnly ? 'bg-violet-500 text-white' : 'bg-white/10 hover:bg-white/20 text-white'"
+                    aria-label="Show only changed resolvers">
+                    Δ Changed
+                  </button>
+                  <button type="button" @click="clearSnapshot()"
+                    class="btn bg-white/10 hover:bg-white/20 text-white ring-1 ring-white/20 text-xs"
+                    aria-label="Clear snapshot">✕</button>
+                </div>
+              </template>
+
               <div x-show="results.length > 0" class="relative" x-data="{ exportOpen: false }">
                 <button type="button" @click="exportOpen = !exportOpen"
                   class="btn bg-white/10 hover:bg-white/20 text-white ring-1 ring-white/20"
@@ -358,7 +380,7 @@
                   <div class="text-xs font-mono text-emerald-700 dark:text-emerald-400 truncate" x-text="ans.value" :title="ans.value"></div>
                 </template>
               </div>
-              <!-- Location -->
+              <!-- Location + diff badge -->
               <div class="mt-1 ml-9 text-xs text-slate-400 dark:text-slate-500 flex items-center gap-1.5">
                 <span class="relative group cursor-default leading-none">
                   <span class="fi rounded-sm ring-1 ring-black/5"
@@ -367,6 +389,9 @@
                     x-text="countryName(result.resolver.country)"></span>
                 </span>
                 <span x-text="result.resolver.city || ''"></span>
+                <template x-if="snapshot && snapshotDiff(result) === 'changed'">
+                  <span class="px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400 font-medium">Δ changed</span>
+                </template>
               </div>
             </div>
           </template>
@@ -400,6 +425,7 @@
                   </th>
                 </template>
                 <th class="text-left px-4 py-3 font-medium w-16" scope="col">TTL</th>
+                <th x-show="snapshot" class="text-left px-4 py-3 font-medium w-10" scope="col">Δ</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-100 dark:divide-slate-800/60">
@@ -458,6 +484,18 @@
                   <!-- TTL -->
                   <td class="px-4 py-3 text-slate-400 dark:text-slate-500 text-xs font-mono">
                     <span x-text="result.answers?.[0]?.ttl ? result.answers[0].ttl + 's' : '—'"></span>
+                  </td>
+                  <!-- Δ diff badge -->
+                  <td x-show="snapshot" class="px-4 py-3 text-xs font-medium">
+                    <template x-if="snapshotDiff(result) === 'changed'">
+                      <span class="px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400">changed</span>
+                    </template>
+                    <template x-if="snapshotDiff(result) === 'appeared'">
+                      <span class="px-1.5 py-0.5 rounded bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-400">new</span>
+                    </template>
+                    <template x-if="snapshotDiff(result) === 'same'">
+                      <span class="text-slate-300 dark:text-slate-600">—</span>
+                    </template>
                   </td>
                 </tr>
               </template>
