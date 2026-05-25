@@ -26,3 +26,6 @@ tmp/
 # (leaflet, alpine, flag-icons) which are not produced by `make ui`.
 web/dist/*
 !web/dist/vendor/
+
+# Project/agent instructions — kept local, not tracked
+CLAUDE.md
