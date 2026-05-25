@@ -1,4 +1,8 @@
 version: "3.9"
+# Set POSTGRES_PASSWORD before running:
+#   export POSTGRES_PASSWORD=$(openssl rand -base64 32)
+# or create a deploy/.env file (never commit it):
+#   POSTGRES_PASSWORD=<your-strong-password>
 services:
   dnsmon:
     image: ghcr.io/t0mer/dnsmon:latest
@@ -10,7 +14,7 @@ services:
     environment:
       DNSMON_SERVER_LISTEN: ":8080"
       DNSMON_STORAGE_DRIVER: "postgres"
-      DNSMON_STORAGE_DSN: "postgres://dnsmon:dnsmon@postgres:5432/dnsmon?sslmode=disable"
+      DNSMON_STORAGE_DSN: "postgres://dnsmon:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}@postgres:5432/dnsmon?sslmode=require"
       DNSMON_CACHE_DRIVER: "redis"
       DNSMON_CACHE_REDIS_ADDR: "redis:6379"
       DNSMON_LOG_FORMAT: "json"
@@ -25,7 +29,7 @@ services:
     image: postgres:16-alpine
     environment:
       POSTGRES_USER: dnsmon
-      POSTGRES_PASSWORD: dnsmon
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
       POSTGRES_DB: dnsmon
     volumes:
       - pgdata:/var/lib/postgresql/data

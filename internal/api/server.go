@@ -56,6 +56,7 @@ func (s *Server) Handler() http.Handler {
 func (s *Server) routes() {
 	r := s.router
 
+	r.Use(SecureHeaders())
 	r.Use(RequestID)
 	r.Use(Logger(s.log))
 	r.Use(Recovery(s.log))
@@ -101,7 +102,7 @@ func (s *Server) routes() {
 
 	// API v1
 	r.Route("/api/v1", func(r chi.Router) {
-		r.Use(CORS())
+		r.Use(CORS(s.cfg.Server.BaseURL))
 
 		r.Get("/health", v1.Health)
 		r.Get("/readyz", v1.Readyz(s.storage))
@@ -113,24 +114,24 @@ func (s *Server) routes() {
 		r.Get("/record-types", v1.RecordTypes())
 
 		r.Post("/check", v1.PostCheck(s.checker))
-		r.Get("/check/stream", v1.StreamCheck(s.checker))
+		r.Get("/check/stream", v1.StreamCheck(s.checker, s.cfg.Server.BaseURL))
 		r.Get("/check/{id}", v1.GetCheck(s.storage))
 		r.Get("/check/{id}/export", v1.ExportCheck(s.storage))
 
 		r.Post("/lookup", v1.PostLookup(s.checker))
 		r.Post("/reverse", v1.PostReverse(s.checker))
 
-		r.Get("/history", v1.ListHistory(s.storage))
-		r.Delete("/history/{id}", v1.DeleteHistory(s.storage))
-
 		// Authentication (public so the login form can reach it)
 		r.Post("/auth/login", v1.Login(s.storage))
 		r.Post("/auth/logout", v1.Logout())
 		r.Get("/auth/session", v1.Session(s.storage))
 
-		// Settings — gated by UI auth when enabled.
+		// History and settings — gated by UI auth when enabled.
 		r.Group(func(r chi.Router) {
 			r.Use(RequireAuth(s.storage, true))
+
+			r.Get("/history", v1.ListHistory(s.storage))
+			r.Delete("/history/{id}", v1.DeleteHistory(s.storage))
 
 			r.Get("/settings", v1.GetSettings(s.storage))
 			r.Put("/settings", v1.UpdateSettings(s.storage))

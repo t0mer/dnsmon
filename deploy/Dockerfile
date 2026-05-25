@@ -8,7 +8,7 @@ RUN cd web && npx tailwindcss -i src/css/tailwind.src.css -o dist/css/app.css --
     mkdir -p dist/js && cp src/js/*.js dist/js/ && cp src/*.html dist/
 
 # Stage 2: Build Go binary
-FROM golang:1.23-alpine AS builder
+FROM golang:1.25.10-alpine AS builder
 WORKDIR /app
 COPY go.mod go.sum ./
 RUN go mod download

@@ -172,10 +172,14 @@ func (c *Checker) Lookup(ctx context.Context, req LookupRequest) (*dnsclient.Res
 		}
 		resolver = r
 	} else {
+		customIP := req.Resolver
+		if isPrivateOrLocal(customIP) {
+			return nil, fmt.Errorf("resolver IP %q is a private or local address", customIP)
+		}
 		resolver = dnsclient.Resolver{
 			ID:       "custom",
-			Name:     req.Resolver,
-			IP:       req.Resolver,
+			Name:     customIP,
+			IP:       customIP,
 			Port:     53,
 			Protocol: req.Protocol,
 		}
@@ -217,8 +221,14 @@ func (c *Checker) buildResolverList(ctx context.Context, req CheckRequest) ([]dn
 		}
 	}
 
-	// Custom (ad-hoc) resolvers are not subject to the disabled list.
-	list = append(list, req.CustomResolvers...)
+	// Custom (ad-hoc) resolvers bypass the disabled list but are still subject to
+	// the private-address guard (unless AllowPrivate is explicitly set by the caller).
+	for _, cr := range req.CustomResolvers {
+		if !req.AllowPrivate && isPrivateOrLocal(cr.IP) {
+			return nil, fmt.Errorf("custom resolver IP %q is a private or local address", cr.IP)
+		}
+		list = append(list, cr)
+	}
 
 	if len(list) > maxResolvers {
 		list = list[:maxResolvers]

@@ -34,11 +34,16 @@ type wsErrorData struct {
 }
 
 // StreamCheck handles GET /api/v1/check/stream (WebSocket).
-func StreamCheck(chkr *checker.Checker) http.HandlerFunc {
+// baseURL is the configured server base URL (e.g. "https://dnsmon.example.com"). When
+// non-empty it is used as the sole allowed WebSocket origin, preventing cross-site
+// WebSocket hijacking. When empty the library's default same-origin policy applies.
+func StreamCheck(chkr *checker.Checker, baseURL string) http.HandlerFunc {
+	opts := &websocket.AcceptOptions{}
+	if baseURL != "" {
+		opts.OriginPatterns = []string{baseURL}
+	}
 	return func(w http.ResponseWriter, r *http.Request) {
-		conn, err := websocket.Accept(w, r, &websocket.AcceptOptions{
-			InsecureSkipVerify: true,
-		})
+		conn, err := websocket.Accept(w, r, opts)
 		if err != nil {
 			apierr.WriteError(w, r, http.StatusBadRequest, apierr.ErrCodeInvalidInput,
 				"Failed to upgrade WebSocket connection.", nil)
