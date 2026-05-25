@@ -66,4 +66,10 @@ type CheckSummary struct {
 	Errors           int            `json:"errors"`
 	UniqueAnswerSets int            `json:"unique_answer_sets"`
 	Consensus        map[string]int `json:"consensus"`
+	// ConvergedPct is the percentage of responding resolvers serving the majority answer.
+	ConvergedPct int `json:"converged_pct"`
+	// PropagationETA is the estimated seconds until full propagation, based on the maximum
+	// TTL observed across resolvers that diverge from the majority answer. Zero means
+	// already fully propagated; nil means not applicable (no majority / no responses).
+	PropagationETA *int64 `json:"propagation_eta,omitempty"`
 }

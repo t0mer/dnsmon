@@ -225,6 +225,22 @@
             <span class="text-slate-500 dark:text-slate-400">Unique answers</span>
             <span class="font-semibold text-slate-900 dark:text-white" x-text="summary?.unique_answer_sets"></span>
           </div>
+          <!-- Convergence % -->
+          <div x-show="summary?.converged_pct != null" class="flex items-center gap-2">
+            <div class="w-2 h-2 rounded-full flex-shrink-0"
+              :class="summary?.converged_pct >= 100 ? 'bg-emerald-500' : 'bg-violet-500'"></div>
+            <span class="text-slate-500 dark:text-slate-400">Converged</span>
+            <span class="font-semibold"
+              :class="summary?.converged_pct >= 100 ? 'text-emerald-600 dark:text-emerald-400' : 'text-violet-600 dark:text-violet-400'"
+              x-text="summary?.converged_pct + '%'"></span>
+          </div>
+          <!-- Propagation ETA -->
+          <div x-show="summary?.propagation_eta != null && summary?.propagation_eta > 0" class="flex items-center gap-2">
+            <div class="w-2 h-2 rounded-full bg-amber-400 flex-shrink-0"></div>
+            <span class="text-slate-500 dark:text-slate-400">Propagation ETA</span>
+            <span class="font-semibold text-amber-600 dark:text-amber-400"
+              x-text="formatETA(summary?.propagation_eta)"></span>
+          </div>
           <div x-show="summary?.nxdomain > 0" class="flex items-center gap-2">
             <div class="w-2 h-2 rounded-full bg-amber-500 flex-shrink-0"></div>
             <span class="text-slate-500 dark:text-slate-400">NXDOMAIN</span>
