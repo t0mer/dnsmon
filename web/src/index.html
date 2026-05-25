@@ -38,6 +38,7 @@
           <a href="/" class="nav-link-active px-3 py-1.5 rounded-md bg-indigo-50 dark:bg-indigo-950/40" aria-current="page">Propagation</a>
           <a href="/lookup" class="nav-link px-3 py-1.5 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800/60">DNS Lookup</a>
           <a href="/reverse" class="nav-link px-3 py-1.5 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800/60">Reverse DNS</a>
+          <a href="/trace" class="nav-link px-3 py-1.5 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800/60">Trace</a>
           <a href="/api/docs" class="nav-link px-3 py-1.5 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800/60">API</a>
           <a href="/settings" class="nav-link px-3 py-1.5 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800/60">Settings</a>
         </div>
@@ -63,6 +64,7 @@
         <a href="/" class="flex items-center px-3 py-2 rounded-lg text-sm font-medium text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/40" aria-current="page">Propagation Check</a>
         <a href="/lookup" class="flex items-center px-3 py-2 rounded-lg text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800">DNS Lookup</a>
         <a href="/reverse" class="flex items-center px-3 py-2 rounded-lg text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800">Reverse DNS</a>
+        <a href="/trace" class="flex items-center px-3 py-2 rounded-lg text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800">Trace</a>
         <a href="/api/docs" class="flex items-center px-3 py-2 rounded-lg text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800">API Docs</a>
         <a href="/settings" class="flex items-center px-3 py-2 rounded-lg text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800">Settings</a>
       </div>
@@ -140,6 +142,28 @@
                 <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8M16 6l-4-4-4 4M12 2v13"/></svg>
                 <span x-text="shareLabel"></span>
               </button>
+
+              <!-- Snapshot controls -->
+              <button type="button" x-show="results.length > 0 && !snapshot" @click="saveSnapshot()"
+                class="btn bg-white/10 hover:bg-white/20 text-white ring-1 ring-white/20"
+                aria-label="Save snapshot for diff comparison">
+                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                Snapshot
+              </button>
+              <template x-if="snapshot">
+                <div class="flex items-center gap-1">
+                  <span class="text-xs text-indigo-200">📸 <span x-text="snapshotTime"></span></span>
+                  <button type="button" @click="diffOnly = !diffOnly"
+                    class="btn text-xs ring-1 ring-white/20"
+                    :class="diffOnly ? 'bg-violet-500 text-white' : 'bg-white/10 hover:bg-white/20 text-white'"
+                    aria-label="Show only changed resolvers">
+                    Δ Changed
+                  </button>
+                  <button type="button" @click="clearSnapshot()"
+                    class="btn bg-white/10 hover:bg-white/20 text-white ring-1 ring-white/20 text-xs"
+                    aria-label="Clear snapshot">✕</button>
+                </div>
+              </template>
 
               <div x-show="results.length > 0" class="relative" x-data="{ exportOpen: false }">
                 <button type="button" @click="exportOpen = !exportOpen"
@@ -224,6 +248,22 @@
             <div class="w-2 h-2 rounded-full bg-indigo-500 flex-shrink-0"></div>
             <span class="text-slate-500 dark:text-slate-400">Unique answers</span>
             <span class="font-semibold text-slate-900 dark:text-white" x-text="summary?.unique_answer_sets"></span>
+          </div>
+          <!-- Convergence % -->
+          <div x-show="summary?.converged_pct != null" class="flex items-center gap-2">
+            <div class="w-2 h-2 rounded-full flex-shrink-0"
+              :class="summary?.converged_pct >= 100 ? 'bg-emerald-500' : 'bg-violet-500'"></div>
+            <span class="text-slate-500 dark:text-slate-400">Converged</span>
+            <span class="font-semibold"
+              :class="summary?.converged_pct >= 100 ? 'text-emerald-600 dark:text-emerald-400' : 'text-violet-600 dark:text-violet-400'"
+              x-text="summary?.converged_pct + '%'"></span>
+          </div>
+          <!-- Propagation ETA -->
+          <div x-show="summary?.propagation_eta != null && summary?.propagation_eta > 0" class="flex items-center gap-2">
+            <div class="w-2 h-2 rounded-full bg-amber-400 flex-shrink-0"></div>
+            <span class="text-slate-500 dark:text-slate-400">Propagation ETA</span>
+            <span class="font-semibold text-amber-600 dark:text-amber-400"
+              x-text="formatETA(summary?.propagation_eta)"></span>
           </div>
           <div x-show="summary?.nxdomain > 0" class="flex items-center gap-2">
             <div class="w-2 h-2 rounded-full bg-amber-500 flex-shrink-0"></div>
@@ -342,7 +382,7 @@
                   <div class="text-xs font-mono text-emerald-700 dark:text-emerald-400 truncate" x-text="ans.value" :title="ans.value"></div>
                 </template>
               </div>
-              <!-- Location -->
+              <!-- Location + diff badge -->
               <div class="mt-1 ml-9 text-xs text-slate-400 dark:text-slate-500 flex items-center gap-1.5">
                 <span class="relative group cursor-default leading-none">
                   <span class="fi rounded-sm ring-1 ring-black/5"
@@ -351,6 +391,9 @@
                     x-text="countryName(result.resolver.country)"></span>
                 </span>
                 <span x-text="result.resolver.city || ''"></span>
+                <template x-if="snapshot && snapshotDiff(result) === 'changed'">
+                  <span class="px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400 font-medium">Δ changed</span>
+                </template>
               </div>
             </div>
           </template>
@@ -384,6 +427,7 @@
                   </th>
                 </template>
                 <th class="text-left px-4 py-3 font-medium w-16" scope="col">TTL</th>
+                <th x-show="snapshot" class="text-left px-4 py-3 font-medium w-10" scope="col">Δ</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-100 dark:divide-slate-800/60">
@@ -442,6 +486,18 @@
                   <!-- TTL -->
                   <td class="px-4 py-3 text-slate-400 dark:text-slate-500 text-xs font-mono">
                     <span x-text="result.answers?.[0]?.ttl ? result.answers[0].ttl + 's' : '—'"></span>
+                  </td>
+                  <!-- Δ diff badge -->
+                  <td x-show="snapshot" class="px-4 py-3 text-xs font-medium">
+                    <template x-if="snapshotDiff(result) === 'changed'">
+                      <span class="px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400">changed</span>
+                    </template>
+                    <template x-if="snapshotDiff(result) === 'appeared'">
+                      <span class="px-1.5 py-0.5 rounded bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-400">new</span>
+                    </template>
+                    <template x-if="snapshotDiff(result) === 'same'">
+                      <span class="text-slate-300 dark:text-slate-600">—</span>
+                    </template>
                   </td>
                 </tr>
               </template>

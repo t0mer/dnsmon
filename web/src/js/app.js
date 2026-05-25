@@ -36,6 +36,20 @@ function countryName(code) {
 }
 
 // ---------------------------------------------------------------------------
+// Propagation ETA helper: converts seconds to a human-readable string.
+// ---------------------------------------------------------------------------
+function formatETA(seconds) {
+  if (seconds == null || seconds <= 0) return '< 1s';
+  if (seconds < 60) return `~${seconds}s`;
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  if (m < 60) return s > 0 ? `~${m}m ${s}s` : `~${m}m`;
+  const h = Math.floor(m / 60);
+  const rm = m % 60;
+  return rm > 0 ? `~${h}h ${rm}m` : `~${h}h`;
+}
+
+// ---------------------------------------------------------------------------
 // dnsmonApp — DNS Propagation Checker (index.html)
 // ---------------------------------------------------------------------------
 function dnsmonApp() {
@@ -63,6 +77,11 @@ function dnsmonApp() {
     // Pagination
     page: 1,
     pageSize: 25,
+
+    // Snapshot (diff baseline)
+    snapshot: null,       // {[resolver_id]: canonicalKey}
+    snapshotTime: '',
+    diffOnly: false,      // filter table to changed resolvers only
 
     // Map
     _map: null,
@@ -290,21 +309,22 @@ function dnsmonApp() {
     // ---------------------------------------------------------------------------
     get totalPages() {
       if (this.pageSize === 0) return 1;
-      return Math.max(1, Math.ceil(this.results.length / this.pageSize));
+      return Math.max(1, Math.ceil(this.diffFilteredResults.length / this.pageSize));
     },
 
     get pagedResults() {
-      if (this.pageSize === 0) return this.sortedResults;
+      if (this.pageSize === 0) return this.diffFilteredResults;
       const start = (this.page - 1) * this.pageSize;
-      return this.sortedResults.slice(start, start + this.pageSize);
+      return this.diffFilteredResults.slice(start, start + this.pageSize);
     },
 
     get pageRangeLabel() {
-      if (this.results.length === 0) return '';
-      if (this.pageSize === 0) return `1–${this.results.length} of ${this.results.length}`;
+      const total = this.diffFilteredResults.length;
+      if (total === 0) return '';
+      if (this.pageSize === 0) return `1–${total} of ${total}`;
       const start = (this.page - 1) * this.pageSize + 1;
-      const end = Math.min(this.page * this.pageSize, this.results.length);
-      return `${start}–${end} of ${this.results.length}`;
+      const end = Math.min(this.page * this.pageSize, total);
+      return `${start}–${end} of ${total}`;
     },
 
     get pageNumbers() {
@@ -330,6 +350,7 @@ function dnsmonApp() {
     // Helpers exposed to templates
     // ---------------------------------------------------------------------------
     countryName,
+    formatETA,
 
     // ---------------------------------------------------------------------------
     // Internal helpers
@@ -345,6 +366,43 @@ function dnsmonApp() {
       if (this._markerLayer) {
         this._markerLayer.clearLayers();
       }
+    },
+
+    // ---------------------------------------------------------------------------
+    // Snapshot / diff
+    // ---------------------------------------------------------------------------
+    _answerKey(result) {
+      if (!result.answers || result.answers.length === 0) return result.status || '';
+      return result.answers.map((a) => a.value).sort().join(',');
+    },
+
+    saveSnapshot() {
+      const snap = {};
+      for (const r of this.results) snap[r.resolver.id] = this._answerKey(r);
+      this.snapshot = snap;
+      this.snapshotTime = new Date().toLocaleTimeString();
+      this.diffOnly = false;
+    },
+
+    clearSnapshot() {
+      this.snapshot = null;
+      this.snapshotTime = '';
+      this.diffOnly = false;
+    },
+
+    // Returns 'same' | 'changed' | 'appeared' | null (no snapshot).
+    snapshotDiff(result) {
+      if (!this.snapshot) return null;
+      const prev = this.snapshot[result.resolver.id];
+      const curr = this._answerKey(result);
+      if (prev === undefined) return 'appeared';
+      if (prev === curr) return 'same';
+      return 'changed';
+    },
+
+    get diffFilteredResults() {
+      if (!this.snapshot || !this.diffOnly) return this.sortedResults;
+      return this.sortedResults.filter((r) => this.snapshotDiff(r) !== 'same');
     },
   };
 }
@@ -942,6 +1000,46 @@ function settingsApp() {
 }
 
 // ---------------------------------------------------------------------------
+// traceApp — Authoritative trace page (trace.html)
+// ---------------------------------------------------------------------------
+function traceApp() {
+  return {
+    domain: '',
+    type: 'A',
+    steps: [],
+    loading: false,
+    errorMsg: '',
+
+    async trace() {
+      if (!this.domain.trim()) return;
+      this.steps = [];
+      this.errorMsg = '';
+      this.loading = true;
+
+      try {
+        const resp = await fetch('/api/v1/trace', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: this.domain.trim(), type: this.type }),
+        });
+
+        if (!resp.ok) {
+          const err = await resp.json().catch(() => ({ error: { message: resp.statusText } }));
+          throw new Error(err?.error?.message || `HTTP ${resp.status}`);
+        }
+
+        const data = await resp.json();
+        this.steps = data.steps || [];
+      } catch (err) {
+        this.errorMsg = err.message;
+      } finally {
+        this.loading = false;
+      }
+    },
+  };
+}
+
+// ---------------------------------------------------------------------------
 // loginApp — Sign-in page (login.html)
 // ---------------------------------------------------------------------------
 function loginApp() {
@@ -982,6 +1080,7 @@ document.addEventListener('alpine:init', () => {
   Alpine.data('dnsmonApp', dnsmonApp);
   Alpine.data('lookupApp', lookupApp);
   Alpine.data('reverseApp', reverseApp);
+  Alpine.data('traceApp', traceApp);
   Alpine.data('settingsApp', settingsApp);
   Alpine.data('loginApp', loginApp);
 });

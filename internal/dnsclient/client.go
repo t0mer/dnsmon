@@ -155,6 +155,9 @@ func isTimeout(err error) bool {
 	return ok && netErr.Timeout()
 }
 
+// RRToAnswer converts a miekg/dns resource record to an Answer.
+func RRToAnswer(rr dns.RR) Answer { return rrToAnswer(rr) }
+
 func rrToAnswer(rr dns.RR) Answer {
 	hdr := rr.Header()
 	a := Answer{

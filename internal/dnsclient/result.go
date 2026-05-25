@@ -2,6 +2,28 @@ package dnsclient
 
 import "time"
 
+// TraceStep represents one delegation hop in an authoritative trace.
+type TraceStep struct {
+	Zone          string   `json:"zone"`
+	Nameserver    string   `json:"nameserver"`
+	IP            string   `json:"ip"`
+	QueryType     string   `json:"query_type"`
+	Answers       []Answer `json:"answers,omitempty"`
+	Authority     []Answer `json:"authority,omitempty"`
+	Additional    []Answer `json:"additional,omitempty"`
+	Authoritative bool     `json:"authoritative"`
+	DurationMS    int64    `json:"duration_ms"`
+	Status        string   `json:"status"`
+	Error         string   `json:"error,omitempty"`
+}
+
+// TraceResult is the full delegation chain for a name/type pair.
+type TraceResult struct {
+	Name  string      `json:"name"`
+	Type  string      `json:"type"`
+	Steps []TraceStep `json:"steps"`
+}
+
 const (
 	StatusOK       = "ok"
 	StatusNXDomain = "nxdomain"
@@ -66,4 +88,10 @@ type CheckSummary struct {
 	Errors           int            `json:"errors"`
 	UniqueAnswerSets int            `json:"unique_answer_sets"`
 	Consensus        map[string]int `json:"consensus"`
+	// ConvergedPct is the percentage of responding resolvers serving the majority answer.
+	ConvergedPct int `json:"converged_pct"`
+	// PropagationETA is the estimated seconds until full propagation, based on the maximum
+	// TTL observed across resolvers that diverge from the majority answer. Zero means
+	// already fully propagated; nil means not applicable (no majority / no responses).
+	PropagationETA *int64 `json:"propagation_eta,omitempty"`
 }

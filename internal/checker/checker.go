@@ -347,6 +347,38 @@ func buildSummary(results []dnsclient.ResolverResult) dnsclient.CheckSummary {
 	}
 	s.UniqueAnswerSets = len(seen)
 
+	// Propagation convergence + ETA.
+	if s.Responded > 0 {
+		// Identify the majority answer set.
+		var majorityKey string
+		var majorityCount int
+		for k, n := range s.Consensus {
+			if n > majorityCount {
+				majorityCount = n
+				majorityKey = k
+			}
+		}
+		s.ConvergedPct = (majorityCount * 100) / s.Responded
+
+		// ETA = max TTL across resolvers not yet serving the majority answer.
+		var maxTTL uint32
+		for _, r := range results {
+			if r.Status != dnsclient.StatusOK {
+				continue
+			}
+			if answersKey(r.Answers) == majorityKey {
+				continue
+			}
+			for _, a := range r.Answers {
+				if a.TTL > maxTTL {
+					maxTTL = a.TTL
+				}
+			}
+		}
+		eta := int64(maxTTL)
+		s.PropagationETA = &eta
+	}
+
 	return s
 }
 
