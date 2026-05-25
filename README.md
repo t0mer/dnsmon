@@ -20,6 +20,17 @@ private whatsmydns.
 - 🌍 **Propagation check** across 124 curated global resolvers, with an
   interactive world map, consensus summary, country flags, and a sortable,
   paginated results table.
+- ⏱️ **Propagation ETA** — estimates how long until full propagation based on
+  the maximum TTL observed across resolvers still serving an old answer.
+  Shows convergence % and a human-readable countdown (e.g. "~2m 30s").
+- 📸 **Snapshot diff** — save a check result as a baseline, then re-run to
+  see a per-resolver Δ column (changed / unchanged). A "Changed only" filter
+  narrows the table to just the resolvers that flipped, making in-progress
+  propagation easy to track.
+- 🔗 **Authoritative trace** — walks the full DNS delegation chain from root
+  nameservers down to the authoritative server, equivalent to `dig +trace`.
+  Each hop shows the zone, nameserver IP, referral or authoritative status,
+  answer records, and round-trip time.
 - 🔎 **DNS Lookup** — full single-resolver response (Answer / Authority /
   Additional sections, TTLs, flags) against any resolver or custom IP.
 - 🔁 **Reverse DNS** — PTR lookups for IPv4/IPv6 across all resolvers.
