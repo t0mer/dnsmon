@@ -10,7 +10,7 @@ fails to propagate or changes unexpectedly.
 Single static Go binary with an embedded UI. `docker compose up` and you have a
 private whatsmydns.
 
-![DNS propagation check](docs/screenshots/propagation.png)
+![DNS propagation check](https://raw.githubusercontent.com/t0mer/dnsmon/main/docs/screenshots/propagation.png)
 
 ---
 
@@ -120,15 +120,15 @@ go build -o bin/dnsmon ./cmd/dnsmon
 
 | DNS Lookup | Reverse DNS |
 |---|---|
-| ![DNS Lookup](docs/screenshots/lookup.png) | ![Reverse DNS](docs/screenshots/reverse.png) |
+| ![DNS Lookup](https://raw.githubusercontent.com/t0mer/dnsmon/main/docs/screenshots/lookup.png) | ![Reverse DNS](https://raw.githubusercontent.com/t0mer/dnsmon/main/docs/screenshots/reverse.png) |
 
 | Monitors | Notification channels |
 |---|---|
-| ![Monitors](docs/screenshots/settings-monitors.png) | ![Notifications](docs/screenshots/settings-notifications.png) |
+| ![Monitors](https://raw.githubusercontent.com/t0mer/dnsmon/main/docs/screenshots/settings-monitors.png) | ![Notifications](https://raw.githubusercontent.com/t0mer/dnsmon/main/docs/screenshots/settings-notifications.png) |
 
 **API docs** (`/api/docs`)
 
-![API docs](docs/screenshots/api-docs.png)
+![API docs](https://raw.githubusercontent.com/t0mer/dnsmon/main/docs/screenshots/api-docs.png)
 
 ---
 
