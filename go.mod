@@ -13,7 +13,7 @@ require (
 	github.com/jung-kurt/gofpdf v1.16.2
 	github.com/kardianos/service v1.2.4
 	github.com/miekg/dns v1.1.62
-	github.com/oschwald/geoip2-golang v1.11.0
+	github.com/oschwald/geoip2-golang v1.13.0
 	github.com/prometheus/client_golang v1.23.2
 	github.com/redis/go-redis/v9 v9.7.3
 	github.com/spf13/viper v1.19.0
